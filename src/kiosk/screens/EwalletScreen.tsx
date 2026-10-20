@@ -1,0 +1,168 @@
+'use client'
+
+import { motion } from 'framer-motion'
+import { CheckCircle2, Hourglass, Info, Loader2, TriangleAlert, X } from 'lucide-react'
+import { useKiosk } from '@/kiosk/KioskContext'
+import { Chip, KButton, KCard, Money, ProgressBar, SectionHeading, StatusPill } from '@/kiosk/components/primitives'
+import { PriceSummary } from '@/kiosk/components/PriceSummary'
+import { QRPattern } from '@/kiosk/components/QRPattern'
+import { formatCountdown } from '@/kiosk/lib/format'
+import { WALLET_TIMEOUT_SEC } from '@/kiosk/lib/machine'
+
+const PAYMENT_STEPS = ['Open your e-wallet app', 'Scan this QR code', 'Check the amount, then confirm']
+
+export function EwalletScreen() {
+  const { state, dispatch } = useKiosk()
+  const { payment } = state
+
+  const awaiting = payment.status === 'awaiting'
+  const timePct = Math.max(0, Math.min(100, (payment.deadlineSec / WALLET_TIMEOUT_SEC) * 100))
+
+  return (
+    <div className="mx-auto w-full max-w-[1280px] px-4 py-6 sm:px-8 sm:py-10">
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+        <SectionHeading sub="Scan the QR code with GCash, Maya or any supported e-wallet app.">
+          E-wallet payment
+        </SectionHeading>
+
+        <div className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_400px]">
+          <div className="flex flex-col gap-6">
+            {/* Main card */}
+            <KCard>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <h3 className="font-display text-2xl font-bold sm:text-3xl">Pay with your e-wallet</h3>
+                <Chip className="font-mono text-sm sm:text-base">Ref {payment.reference}</Chip>
+              </div>
+
+              <p className="mt-6 text-sm font-bold uppercase tracking-wide text-black/60">Amount to pay</p>
+              <Money value={payment.due} className="text-4xl" />
+
+              {awaiting ? (
+                <>
+                  {/* QR code */}
+                  <div className="mt-6 flex justify-center">
+                    {payment.qrData ? (
+                      <QRPattern
+                        data={payment.qrData}
+                        className="size-64 sm:size-72"
+                        label={`E-wallet payment QR for reference ${payment.reference}`}
+                      />
+                    ) : (
+                      <div className="flex min-h-64 items-center gap-3 font-display text-lg font-bold sm:min-h-72">
+                        <Loader2 className="size-6 shrink-0 animate-spin" strokeWidth={2.5} aria-hidden />
+                        <span>Preparing your payment…</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* How to pay */}
+                  <ol className="mx-auto mt-6 w-full max-w-sm space-y-3">
+                    {PAYMENT_STEPS.map((step, i) => (
+                      <li key={step} className="flex items-center gap-3">
+                        <span className="kb-cream flex size-10 shrink-0 items-center justify-center rounded-xl border-[3px] border-black font-display text-lg font-bold">
+                          {i + 1}
+                        </span>
+                        <span className="font-semibold">{step}</span>
+                      </li>
+                    ))}
+                  </ol>
+
+                  {/* Timer */}
+                  <ProgressBar
+                    className="mt-6"
+                    value={timePct}
+                    tone={timePct < 30 ? 'coral' : 'lime'}
+                    label="Time remaining to pay"
+                  />
+                  <p className="mt-3 font-display text-xl font-bold">
+                    Complete payment before timer ends — {formatCountdown(payment.deadlineSec)}
+                  </p>
+
+                  <div className="mt-4">
+                    <StatusPill tone="info" icon={Loader2} className="[&>svg]:animate-spin">
+                      Waiting for payment…
+                    </StatusPill>
+                  </div>
+                </>
+              ) : null}
+            </KCard>
+
+            {/* Confirmed */}
+            {payment.status === 'confirmed' ? (
+              <KCard tone="lime">
+                <div className="flex items-center gap-3">
+                  <CheckCircle2 className="size-8 shrink-0" strokeWidth={2.5} aria-hidden />
+                  <h3 className="font-display text-2xl font-bold">Payment confirmed</h3>
+                </div>
+                <div className="mt-4 flex items-center gap-2 font-semibold">
+                  <Loader2 className="size-5 shrink-0 animate-spin" strokeWidth={2.5} aria-hidden />
+                  <span>Starting your print job…</span>
+                </div>
+              </KCard>
+            ) : null}
+
+            {/* Expired */}
+            {payment.status === 'expired' ? (
+              <KCard tone="coral">
+                <div className="flex items-center gap-3">
+                  <Hourglass className="size-8 shrink-0" strokeWidth={2.5} aria-hidden />
+                  <h3 className="font-display text-2xl font-bold">Payment expired</h3>
+                </div>
+                <p className="mt-3 text-base font-semibold">{payment.message}</p>
+                <p className="mt-1 text-base font-semibold">No money was charged.</p>
+                <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                  <KButton tone="lime" onClick={() => dispatch({ type: 'PAYMENT_RETRY' })}>
+                    Try again
+                  </KButton>
+                  <KButton tone="white" onClick={() => dispatch({ type: 'PAYMENT_CANCEL' })}>
+                    Choose another method
+                  </KButton>
+                </div>
+              </KCard>
+            ) : null}
+
+            {/* Failed */}
+            {payment.status === 'failed' ? (
+              <KCard tone="coral">
+                <div className="flex items-center gap-3">
+                  <TriangleAlert className="size-8 shrink-0" strokeWidth={2.5} aria-hidden />
+                  <h3 className="font-display text-2xl font-bold">Payment failed</h3>
+                </div>
+                <p className="mt-3 text-base font-semibold">{payment.message}</p>
+                <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                  <KButton tone="lime" onClick={() => dispatch({ type: 'PAYMENT_RETRY' })}>
+                    Try again
+                  </KButton>
+                  <KButton tone="white" onClick={() => dispatch({ type: 'PAYMENT_CANCEL' })}>
+                    Choose another method
+                  </KButton>
+                </div>
+              </KCard>
+            ) : null}
+
+            {/* Policy note */}
+            <KCard tone="cream">
+              <div className="flex items-start gap-3">
+                <Info className="mt-0.5 size-5 shrink-0" strokeWidth={2.5} aria-hidden />
+                <p className="text-sm font-semibold">
+                  Your e-wallet is charged only after confirmation. Expired or failed payments never charge you.
+                </p>
+              </div>
+            </KCard>
+
+            {/* Footer */}
+            {awaiting ? (
+              <div>
+                <KButton tone="white" icon={X} onClick={() => dispatch({ type: 'PAYMENT_CANCEL' })}>
+                  Cancel payment
+                </KButton>
+              </div>
+            ) : null}
+          </div>
+
+          <PriceSummary compact className="w-full" />
+        </div>
+      </motion.div>
+    </div>
+  )
+}

@@ -1,0 +1,18 @@
+appId: ph.smartprint.kiosk
+productName: Smart Print
+directories:
+  output: release
+files:
+  - dist-renderer/**
+  - electron/**
+  - package.json
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  kiosk: true
+nsis:
+  oneClick: true
+  perMachine: true
+  createDesktopShortcut: false
+  createStartMenuShortcut: true

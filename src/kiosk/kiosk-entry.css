@@ -1,0 +1,5 @@
+/* Vite renderer entry stylesheet (Electron desktop build).
+   The Next.js host imports tailwind + ./kiosk.css via src/app/globals.css instead. */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap");
+@import "tailwindcss";
+@import "./kiosk.css";
