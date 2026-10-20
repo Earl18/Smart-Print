@@ -10,7 +10,10 @@ import { SetupRequiredScreen } from '@/kiosk/overlays/SetupRequiredScreen'
 import { NotReadyScreen } from '@/kiosk/overlays/NotReadyScreen'
 import { RecoveryScreen } from '@/kiosk/overlays/RecoveryScreen'
 import { OutageHoldScreen } from '@/kiosk/overlays/OutageHoldScreen'
+import { MaintenanceOverlay } from '@/kiosk/overlays/MaintenanceOverlay'
 import { WelcomeScreen } from '@/kiosk/screens/WelcomeScreen'
+import { SetupWizardScreen } from '@/kiosk/screens/SetupWizardScreen'
+import { KioskBrowserScreen } from '@/kiosk/screens/KioskBrowserScreen'
 import { PreferencesScreen } from '@/kiosk/screens/PreferencesScreen'
 import { SourceSelectScreen } from '@/kiosk/screens/SourceSelectScreen'
 import { ReceivingScreen } from '@/kiosk/screens/ReceivingScreen'
@@ -28,6 +31,8 @@ function screenFor(phase: KioskState['phase']) {
   switch (phase) {
     case 'BOOT':
       return <BootScreen />
+    case 'FIRST_RUN_SETUP':
+      return <SetupWizardScreen />
     case 'SETUP_REQUIRED':
       return <SetupRequiredScreen />
     case 'NOT_READY':
@@ -36,6 +41,8 @@ function screenFor(phase: KioskState['phase']) {
       return <RecoveryScreen />
     case 'WELCOME':
       return <WelcomeScreen />
+    case 'WEBSITE':
+      return <KioskBrowserScreen />
     case 'PREFERENCES':
       return <PreferencesScreen />
     case 'SOURCE_SELECT':
@@ -85,6 +92,7 @@ function KioskShell() {
         </AnimatePresence>
       </main>
       <InactivityOverlay />
+      <MaintenanceOverlay />
       <DevPanel />
     </div>
   )

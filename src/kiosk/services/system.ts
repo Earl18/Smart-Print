@@ -1,4 +1,4 @@
-import type { SystemService } from './types'
+import type { SystemFlags, SystemService } from './types'
 
 /**
  * In-memory kiosk self-check: internet reachability and license activation.
@@ -9,6 +9,13 @@ import type { SystemService } from './types'
 export class InMemorySystemService implements SystemService {
   private static OFFLINE_KEY = 'smartprint.sys.offline'
   private static LICENSE_KEY = 'smartprint.sys.license'
+
+  private flagsState: SystemFlags = {
+    storageFreeGb: 42.7,
+    storageTotalGb: 128,
+    bluetooth: true,
+    usb: true,
+  }
 
   private readFlag(key: string): boolean {
     if (typeof window === 'undefined') return false
@@ -34,6 +41,10 @@ export class InMemorySystemService implements SystemService {
       online: !this.readFlag(InMemorySystemService.OFFLINE_KEY) && navigatorOnline,
       licenseOk: !this.readFlag(InMemorySystemService.LICENSE_KEY),
     }
+  }
+
+  flags(): SystemFlags {
+    return { ...this.flagsState }
   }
 
   toggleOffline(): void {

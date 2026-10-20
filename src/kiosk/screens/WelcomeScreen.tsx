@@ -6,6 +6,7 @@ import {
   Banknote,
   Bluetooth,
   CheckCircle2,
+  Globe,
   History,
   Info,
   Paperclip,
@@ -73,6 +74,17 @@ export function WelcomeScreen() {
             >
               Start printing
             </KButton>
+
+            {state.online ? (
+              <KButton
+                tone="white"
+                icon={Globe}
+                className="self-start"
+                onClick={() => dispatch({ type: 'OPEN_WEBSITE' })}
+              >
+                Visit Smart Print website
+              </KButton>
+            ) : null}
 
             <div>
               <p className="mb-2 text-sm font-bold uppercase tracking-wide text-black/60">Send files from</p>

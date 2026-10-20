@@ -17,6 +17,10 @@ export class InMemoryCashService implements CashService {
     this.session = null
   }
 
+  check(): { ready: boolean; message: string } {
+    return { ready: true, message: 'Acceptor detected — ready to take banknotes' }
+  }
+
   onInserted(cb: (payload: CashInsertedEvent) => void): Unsubscribe {
     return this.emitter.on('inserted', cb)
   }

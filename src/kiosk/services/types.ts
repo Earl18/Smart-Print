@@ -1,4 +1,14 @@
-import type { DocMeta, FileSource, IntakeStatus, PrintStatus, UsbFile } from '@/kiosk/lib/types'
+import type {
+  DeviceStatus,
+  DocMeta,
+  FileSource,
+  IntakeStatus,
+  KioskConfig,
+  PrintStatus,
+  SetupProgress,
+  UsbFile,
+  WifiNetwork,
+} from '@/kiosk/lib/types'
 import type { Unsubscribe } from '@/kiosk/lib/emitter'
 
 /* ============================================================
@@ -40,6 +50,8 @@ export type CashErrorEvent = { message: string }
 export interface CashService {
   beginSession(due: number): void
   endSession(): void
+  /** Self-check used by the setup wizard's device check. */
+  check(): { ready: boolean; message: string }
   onInserted(cb: (payload: CashInsertedEvent) => void): Unsubscribe
   onError(cb: (payload: CashErrorEvent) => void): Unsubscribe
   /* Operator-only triggers (hidden panel). */
@@ -115,8 +127,77 @@ export interface StorageService {
    SystemService — network / license / device checks
    ============================================================ */
 
+export interface SystemFlags {
+  storageFreeGb: number
+  storageTotalGb: number
+  bluetooth: boolean
+  usb: boolean
+}
+
 export interface SystemService {
   check(): { online: boolean; licenseOk: boolean }
+  /** Local hardware probes for the setup wizard's device check. */
+  flags(): SystemFlags
   toggleOffline(): void
   toggleLicense(): void
+}
+
+/* ============================================================
+   KioskConfigService — persisted kiosk configuration
+   ============================================================ */
+
+export interface KioskConfigService {
+  /** The stored configuration, or null on a factory-fresh kiosk. */
+  load(): KioskConfig | null
+  save(config: KioskConfig): void
+  /** Clears license + configuration. Held customer sessions are kept. */
+  resetKiosk(): void
+  loadSetupProgress(): SetupProgress | null
+  saveSetupProgress(progress: SetupProgress): void
+  clearSetupProgress(): void
+  /** Verifies the maintenance PIN. Failed attempts lock the keypad for a minute. */
+  verifyOperatorPin(pin: string): { ok: boolean; lockedFor: number }
+  /** Seconds remaining on an active PIN lockout (0 when unlocked). */
+  pinLockRemaining(): number
+  setWebsiteUrl(url: string): void
+}
+
+/* ============================================================
+   NetworkSetupService — setup-time network & license activation
+   ============================================================ */
+
+export type LicenseStatus = 'valid' | 'invalid' | 'expired' | 'in_use'
+
+export interface LicenseValidation {
+  status: LicenseStatus
+  operatorName?: string
+  kioskName?: string
+}
+
+export type ConnectStage = 'wifi' | 'internet' | 'service'
+export type ConnectStageState = 'active' | 'ok' | 'failed'
+
+export interface PublishedSettings {
+  version: number
+  settings: import('@/kiosk/lib/types').OperatorSettings
+  source: 'remote' | 'bundled'
+}
+
+export interface NetworkSetupService {
+  scanWifi(): Promise<WifiNetwork[]>
+  connectWifi(
+    ssid: string,
+    password: string,
+    onStage: (stage: ConnectStage, state: ConnectStageState, message?: string) => void,
+  ): Promise<{ ok: boolean; message: string | null }>
+  validateLicense(key: string): Promise<LicenseValidation>
+  fetchPublishedSettings(mode: 'online' | 'offline'): Promise<PublishedSettings>
+}
+
+/* ============================================================
+   DeviceCheckService — setup wizard hardware checks
+   ============================================================ */
+
+export interface DeviceCheckService {
+  runChecks(): Promise<DeviceStatus[]>
 }

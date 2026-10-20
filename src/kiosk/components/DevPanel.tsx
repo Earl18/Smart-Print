@@ -9,12 +9,23 @@ import {
   LaptopMinimal,
   Power,
   RotateCcw,
-  Wallet,
+  Wrench,
   X,
 } from 'lucide-react'
 import { useKiosk } from '@/kiosk/KioskContext'
-import { cashService, intakeService, printerService, storageService, systemService, walletService } from '@/kiosk/services'
-import { CASH_DENOMINATIONS } from '@/kiosk/services'
+import {
+  BUNDLED_SETTINGS,
+  CASH_DENOMINATIONS,
+  DEFAULT_WEBSITE_URL,
+  VALID_LICENSE_KEY,
+  cashService,
+  intakeService,
+  kioskConfigService,
+  printerService,
+  storageService,
+  systemService,
+  walletService,
+} from '@/kiosk/services'
 
 /**
  * Operator panel — hidden from the customer UI. Opens only with
@@ -33,6 +44,22 @@ export function DevPanel() {
   const cutPower = () => {
     storageService.markPowerLoss()
     setTimeout(() => window.location.reload(), 200)
+  }
+
+  /* Store a complete configuration so the customer flow can be reached
+     without walking the whole wizard. */
+  const applyDefaultConfig = () => {
+    kioskConfigService.save({
+      mode: 'online',
+      wifiSsid: 'SmartPrint-HQ',
+      license: { key: VALID_LICENSE_KEY, operatorName: 'BrightCopy Internet Café', kioskName: 'Smart Print SM-101' },
+      operatorPin: '000000',
+      settings: BUNDLED_SETTINGS,
+      settingsVersion: 7,
+      websiteUrl: DEFAULT_WEBSITE_URL,
+      completedAt: Date.now(),
+    })
+    dispatch({ type: 'SETUP_COMPLETE' })
   }
 
   return (
@@ -105,6 +132,28 @@ export function DevPanel() {
         </button>
       </PanelGroup>
 
+      <PanelGroup label="Setup & maintenance">
+        <button type="button" className="kb-mini" onClick={() => dispatch({ type: 'MAINTENANCE_OPEN' })}>
+          <Wrench className="size-3.5" aria-hidden /> Maintenance
+        </button>
+        <button
+          type="button"
+          className="kb-mini"
+          onClick={() => window.dispatchEvent(new CustomEvent('smartprint:fill-license', { detail: VALID_LICENSE_KEY }))}
+        >
+          Fill key
+        </button>
+        <button type="button" className="kb-mini" onClick={applyDefaultConfig}>
+          Default config
+        </button>
+        <button type="button" className="kb-mini" onClick={() => kioskConfigService.setWebsiteUrl('/site/index.html')}>
+          Site: bundled
+        </button>
+        <button type="button" className="kb-mini" onClick={() => kioskConfigService.setWebsiteUrl(DEFAULT_WEBSITE_URL)}>
+          Site: default
+        </button>
+      </PanelGroup>
+
       <PanelGroup label="Session">
         <button type="button" className="kb-mini" onClick={cutPower}>
           <Power className="size-3.5" aria-hidden /> Cut power
@@ -113,7 +162,7 @@ export function DevPanel() {
           Clear saved
         </button>
         <button type="button" className="kb-mini" onClick={() => dispatch({ type: 'TOGGLE_DEV' })}>
-          <Wallet className="size-3.5" aria-hidden /> Hide
+          Hide
         </button>
       </PanelGroup>
     </section>

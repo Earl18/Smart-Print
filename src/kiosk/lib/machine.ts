@@ -81,10 +81,12 @@ function baseState(prev?: KioskState): KioskState {
     recovery: { powerLostAt: null, savedPhase: null, saved: null },
     outage: { since: null, holding: false, resumePhase: null },
     idle: { warning: false, remainSec: IDLE_WARN_SEC },
+    maintenance: { screen: 'closed', error: null, lockRemain: 0 },
     notice: null,
     devPanelOpen: prev?.devPanelOpen ?? false,
     completedCopies: 0,
     fileDeleted: false,
+    offlineMode: false,
   }
 }
 
@@ -111,8 +113,11 @@ export function reducer(state: KioskState, event: KioskEvent): KioskState {
         licenseOk: event.licenseOk,
         printer: event.printer,
         bootedAt: Date.now(),
+        offlineMode: event.offlineMode ?? false,
       }
-      if (!event.online || !event.licenseOk) return { ...next, phase: 'SETUP_REQUIRED' }
+      // A kiosk configured for offline use intentionally runs without internet.
+      if (!event.online && !next.offlineMode) return { ...next, phase: 'SETUP_REQUIRED' }
+      if (!event.licenseOk) return { ...next, phase: 'SETUP_REQUIRED' }
       if (!event.printer.ready || event.printer.paper === 'out') return { ...next, phase: 'NOT_READY' }
       return { ...next, phase: 'WELCOME' }
     }
@@ -123,6 +128,7 @@ export function reducer(state: KioskState, event: KioskEvent): KioskState {
         licenseOk: event.licenseOk,
         printer: event.printer,
         bootedAt: Date.now(),
+        offlineMode: event.offlineMode ?? false,
         phase: 'RECOVERY_PROMPT',
         recovery: {
           powerLostAt: event.powerLostAt,
@@ -132,7 +138,7 @@ export function reducer(state: KioskState, event: KioskEvent): KioskState {
       }
     }
     case 'SYSTEM_STATUS': {
-      const offline = !event.online
+      const offline = !event.online && !state.offlineMode
       let outage = state.outage
       let phase = state.phase
       if (offline && !state.outage.holding && state.outage.since === null && HOLDABLE_PHASES.includes(state.phase)) {
@@ -518,6 +524,46 @@ export function reducer(state: KioskState, event: KioskEvent): KioskState {
     case 'REPORT_BACK':
       return { ...state, phase: state.job.status === 'completed' ? 'SUCCESS' : 'PRINTING' }
 
+    /* ---------------- first-time setup / website / maintenance ---------------- */
+    case 'SETUP_START':
+      return { ...state, phase: 'FIRST_RUN_SETUP', notice: null }
+    case 'SETUP_COMPLETE':
+      // Configuration is stored by the setup wizard; boot re-checks and gates as usual.
+      return { ...baseState(state), phase: 'BOOT', bootedAt: Date.now() }
+    case 'OPEN_WEBSITE':
+      if (state.phase !== 'WELCOME' || !state.online) return state
+      return { ...state, phase: 'WEBSITE', notice: null }
+    case 'WEBSITE_CLOSE':
+      if (state.phase !== 'WEBSITE') return state
+      return { ...state, phase: 'WELCOME' }
+    case 'MAINTENANCE_OPEN':
+      return {
+        ...state,
+        maintenance: {
+          screen: 'pin',
+          error: null,
+          // Restore any service-level lockout (e.g. after a power cycle).
+          lockRemain: event.lockedFor ?? 0,
+        },
+      }
+    case 'MAINTENANCE_CLOSE':
+      return { ...state, maintenance: { screen: 'closed', error: null, lockRemain: 0 } }
+    case 'MAINTENANCE_PIN_RESULT':
+      if (event.ok) {
+        return { ...state, maintenance: { screen: 'open', error: null, lockRemain: 0 } }
+      }
+      return {
+        ...state,
+        maintenance: {
+          ...state.maintenance,
+          error: event.message,
+          lockRemain: event.lockedFor ?? 0,
+        },
+      }
+    case 'MAINTENANCE_RESET':
+      // Held customer sessions in storage are kept; boot re-enters first-time setup.
+      return { ...baseState(state), phase: 'BOOT', bootedAt: Date.now() }
+
     /* ---------------- timers ---------------- */
     case 'TICK': {
       let next = state
@@ -573,6 +619,17 @@ export function reducer(state: KioskState, event: KioskEvent): KioskState {
           return discardToWelcome({ ...next, idle: { warning: false, remainSec: IDLE_WARN_SEC } }, 'Session ended after inactivity. Nothing was charged.')
         }
         next = { ...next, idle: { ...next.idle, remainSec } }
+      }
+      // maintenance lockout countdown
+      if (next.maintenance.lockRemain > 0) {
+        next = {
+          ...next,
+          maintenance: {
+            ...next.maintenance,
+            lockRemain: next.maintenance.lockRemain - 1,
+            error: next.maintenance.lockRemain - 1 <= 0 ? null : next.maintenance.error,
+          },
+        }
       }
       return next
     }

@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Smart Print — Print anything, anywhere</title>
+    <style>
+      :root {
+        --paper: #fffdf5;
+        --lime: #a3e635;
+        --coral: #fb7185;
+        --blue: #60a5fa;
+        --ink: #000;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        font-family: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+        background: var(--paper);
+        color: var(--ink);
+        line-height: 1.5;
+      }
+      .display { font-family: "Space Grotesk", "Inter", system-ui, sans-serif; font-weight: 700; }
+      .wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+      header.site {
+        position: sticky; top: 0; z-index: 10;
+        background: var(--paper);
+        border-bottom: 3px solid var(--ink);
+      }
+      header.site .wrap { display: flex; align-items: center; gap: 14px; padding-top: 14px; padding-bottom: 14px; }
+      .logo-badge {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 46px; height: 46px; border: 3px solid var(--ink); border-radius: 12px;
+        background: var(--lime); box-shadow: 3px 3px 0 var(--ink);
+        transform: rotate(-2deg); font-size: 22px;
+      }
+      .brand { font-size: 22px; letter-spacing: -0.02em; }
+      .brand .p {
+        display: inline-block; margin-left: 6px; padding: 0 8px;
+        border: 2px solid var(--ink); border-radius: 8px; background: var(--lime);
+        transform: rotate(1deg);
+      }
+      nav.links { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+      nav.links a {
+        display: inline-flex; align-items: center; min-height: 44px;
+        padding: 8px 14px; border: 3px solid var(--ink); border-radius: 12px;
+        background: #fff; box-shadow: 3px 3px 0 var(--ink);
+        color: var(--ink); text-decoration: none; font-weight: 700; font-size: 14px;
+      }
+      nav.links a:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+      .hero { padding: 56px 0 40px; display: grid; gap: 28px; grid-template-columns: 1.1fr 0.9fr; align-items: center; }
+      .hero h1 { font-size: clamp(34px, 5vw, 56px); line-height: 1.02; letter-spacing: -0.03em; }
+      .hero .lime-mark { background: var(--lime); padding: 0 10px; border: 3px solid var(--ink); border-radius: 12px; display: inline-block; transform: rotate(-1deg); }
+      .hero p.lede { margin-top: 18px; font-size: 18px; font-weight: 500; color: rgba(0,0,0,0.7); max-width: 46ch; }
+      .cta-row { margin-top: 26px; display: flex; gap: 14px; flex-wrap: wrap; }
+      .btn {
+        display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+        min-height: 60px; padding: 12px 26px; border: 3px solid var(--ink); border-radius: 16px;
+        box-shadow: 5px 5px 0 var(--ink); font-family: "Space Grotesk", "Inter", sans-serif;
+        font-weight: 700; font-size: 18px; color: var(--ink); text-decoration: none; cursor: pointer;
+        background: var(--lime);
+      }
+      .btn.white { background: #fff; }
+      .btn:active { transform: translate(3px, 3px); box-shadow: 2px 2px 0 var(--ink); }
+      .poster {
+        border: 3px solid var(--ink); border-radius: 20px; background: var(--blue);
+        box-shadow: 6px 6px 0 var(--ink); padding: 26px; transform: rotate(1.2deg);
+      }
+      .poster .row { display: flex; justify-content: space-between; gap: 10px; padding: 12px 0; border-bottom: 3px dashed var(--ink); font-weight: 700; }
+      .poster .row:last-child { border-bottom: 0; }
+      .poster .tag { display: inline-block; margin-bottom: 12px; padding: 4px 10px; border: 2px solid var(--ink); border-radius: 8px; background: #fff; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; }
+      section { padding: 40px 0; }
+      section h2 { font-size: clamp(26px, 3.4vw, 38px); letter-spacing: -0.02em; margin-bottom: 6px; }
+      section .sub { color: rgba(0,0,0,0.65); font-weight: 500; margin-bottom: 24px; max-width: 60ch; }
+      .cards { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+      .card { border: 3px solid var(--ink); border-radius: 18px; background: #fff; box-shadow: 5px 5px 0 var(--ink); padding: 22px; }
+      .card h3 { font-size: 20px; margin-bottom: 4px; }
+      .card .price { font-size: 30px; margin: 10px 0 2px; }
+      .card .per { font-size: 13px; font-weight: 700; color: rgba(0,0,0,0.55); text-transform: uppercase; letter-spacing: 0.06em; }
+      .card ul { margin: 14px 0 0 18px; font-size: 14.5px; font-weight: 500; }
+      .card.coral { background: var(--coral); }
+      .card.lime { background: var(--lime); }
+      .steps li { margin: 10px 0 0 20px; font-weight: 600; }
+      footer.site { border-top: 3px solid var(--ink); margin-top: 30px; padding: 26px 0 34px; }
+      footer.site .wrap { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; font-size: 14px; font-weight: 600; }
+      .kiosk-banner {
+        display: none; padding: 10px 20px; background: var(--ink); color: #fff;
+        font-weight: 700; font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase;
+      }
+      /* The site hides app-download actions when opened from a print kiosk (?kiosk=1) */
+      html.kiosk-view .app-only { display: none !important; }
+      html.kiosk-view .kiosk-banner { display: block; }
+      @media (max-width: 860px) {
+        .hero { grid-template-columns: 1fr; }
+        nav.links { display: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="kiosk-banner">Smart Print kiosk view · downloads are disabled here</div>
+    <header class="site">
+      <div class="wrap">
+        <span class="logo-badge" aria-hidden="true">🖨️</span>
+        <span class="brand display">SMART<span class="p">PRINT</span></span>
+        <nav class="links" aria-label="Site sections">
+          <a href="#pricing">Pricing</a>
+          <a href="#how">How it works</a>
+          <a href="#locations">Locations</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <div class="wrap">
+        <div class="hero">
+          <div>
+            <h1 class="display">Print anything.<br /><span class="lime-mark">Anywhere.</span></h1>
+            <p class="lede">
+              Smart Print kiosks print your documents in seconds — send files from your phone or USB
+              drive, choose your options, pay, and collect your prints. No queue, no app required.
+            </p>
+            <div class="cta-row">
+              <a class="btn app-only" id="download-app" href="#" aria-label="Download the Smart Print app">⬇ Download the app</a>
+              <a class="btn white" href="#pricing">See pricing</a>
+            </div>
+          </div>
+          <div class="poster" role="img" aria-label="Price poster">
+            <span class="tag">Kiosk prices</span>
+            <div class="row display"><span>A4 · Black &amp; white</span><span>₱5 / page</span></div>
+            <div class="row display"><span>A4 · Colored</span><span>₱10 / page</span></div>
+            <div class="row display"><span>A3 · Black &amp; white</span><span>₱10 / page</span></div>
+            <div class="row display"><span>A3 · Colored</span><span>₱15 / page</span></div>
+          </div>
+        </div>
+
+        <section id="pricing">
+          <h2 class="display">Simple per-page pricing</h2>
+          <p class="sub">Pay with cash or e-wallet at the kiosk. Exact amounts are appreciated.</p>
+          <div class="cards">
+            <div class="card">
+              <h3 class="display">Documents</h3>
+              <p class="price display">₱5</p>
+              <p class="per">per page · A4 black &amp; white</p>
+              <ul><li>PDF, Word and images</li><li>1 – 10 copies per job</li></ul>
+            </div>
+            <div class="card lime">
+              <h3 class="display">Colored prints</h3>
+              <p class="price display">₱10</p>
+              <p class="per">per page · A4 colored</p>
+              <ul><li>Photos and flyers</li><li>Same-day output</li></ul>
+            </div>
+            <div class="card coral">
+              <h3 class="display">Large A3</h3>
+              <p class="price display">₱10</p>
+              <p class="per">per page · A3 black &amp; white</p>
+              <ul><li>Posters and forms</li><li>Colored from ₱15</li></ul>
+            </div>
+          </div>
+        </section>
+
+        <section id="how">
+          <h2 class="display">How it works</h2>
+          <p class="sub">Four steps, about two minutes from send to print.</p>
+          <ol class="steps">
+            <li>Choose your paper size, color mode and copies on the kiosk.</li>
+            <li>Send your file — scan the QR code, use Bluetooth, or plug in a USB drive.</li>
+            <li>Review the price and pay with cash or e-wallet.</li>
+            <li>Collect your prints from the tray. Your file is deleted after printing.</li>
+          </ol>
+        </section>
+
+        <section id="locations">
+          <h2 class="display">Find a kiosk</h2>
+          <p class="sub">Over 120 kiosks across Metro Manila, Cebu and Davao.</p>
+          <div class="cards">
+            <div class="card"><h3 class="display">Quiapo Hub</h3><p>FF Suarez St, Quiapo, Manila · Open 8 AM – 9 PM</p></div>
+            <div class="card"><h3 class="display">Cebu IT Park</h3><p>Gate 3, Lahug, Cebu City · Open 24/7</p></div>
+            <div class="card"><h3 class="display">Davao SM Annex</h3><p>Matina, Davao City · Open 10 AM – 8 PM</p></div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="site">
+      <div class="wrap">
+        <span>© 2025 Smart Print · smartprint.example</span>
+        <a class="app-only" href="https://example.com/follow-us" style="font-weight:700;">Follow us online ↗</a>
+      </div>
+    </footer>
+
+    <script>
+      // Kiosk detection: the built-in kiosk browser appends ?kiosk=1.
+      (function () {
+        var params = new URLSearchParams(window.location.search)
+        if (params.has('kiosk')) {
+          document.documentElement.classList.add('kiosk-view')
+        }
+        // Keep the "Download the app" button from navigating anywhere.
+        var dl = document.getElementById('download-app')
+        if (dl) {
+          dl.addEventListener('click', function (e) { e.preventDefault() })
+        }
+      })()
+    </script>
+  </body>
+</html>

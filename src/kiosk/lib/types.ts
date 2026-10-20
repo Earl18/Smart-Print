@@ -40,6 +40,57 @@ export type PrintStatus = 'idle' | 'queued' | 'printing' | 'paper_jam' | 'out_of
 export type IntakeStatus = 'idle' | 'waiting' | 'reading' | 'ready' | 'receiving' | 'error' | 'timeout'
 export type ReportCode = 'lines' | 'faded' | 'wrong_missing' | 'damaged' | 'other'
 
+/* ============================================================
+   Kiosk provisioning — first-time setup & configuration
+   ============================================================ */
+
+export type WifiSecurity = 'Open' | 'WPA2' | 'WPA2/WPA3'
+
+export interface WifiNetwork {
+  ssid: string
+  signal: 1 | 2 | 3 | 4
+  security: WifiSecurity
+}
+
+export interface OperatorSettings {
+  prices: Record<PaperSize, Record<ColorMode, number>>
+  copyLimit: { min: number; max: number }
+  allowedInputs: FileSource[]
+  paymentMethods: PaymentMethod[]
+  timers: { upload: Record<FileSource, number>; cash: number; wallet: number }
+}
+
+/** The configuration a kiosk receives during first-time setup. */
+export interface KioskConfig {
+  mode: 'online' | 'offline'
+  wifiSsid: string | null
+  license: { key: string; operatorName: string; kioskName: string }
+  operatorPin: string
+  settings: OperatorSettings
+  settingsVersion: number
+  websiteUrl: string
+  completedAt: number
+}
+
+/** Wizard progress persisted so a power loss resumes on the same step. */
+export interface SetupProgress {
+  step: number
+  mode: 'online' | 'offline' | null
+  wifiSsid: string | null
+  licenseKey: string | null
+  licenseInfo: { operatorName: string; kioskName: string } | null
+  pin: string | null
+}
+
+export type DeviceId = 'printer' | 'paper' | 'cash' | 'storage' | 'bluetooth' | 'usb'
+
+export interface DeviceStatus {
+  id: DeviceId
+  state: 'ok' | 'warn' | 'fail'
+  detail: string
+  blocking: boolean
+}
+
 export interface PrinterHealth {
   ready: boolean
   paper: 'ok' | 'low' | 'out'
@@ -48,9 +99,11 @@ export interface PrinterHealth {
 
 export type Phase =
   | 'BOOT'
+  | 'FIRST_RUN_SETUP'
   | 'SETUP_REQUIRED'
   | 'NOT_READY'
   | 'WELCOME'
+  | 'WEBSITE'
   | 'RECOVERY_PROMPT'
   | 'PREFERENCES'
   | 'SOURCE_SELECT'
@@ -128,10 +181,13 @@ export interface KioskState {
   recovery: { powerLostAt: number | null; savedPhase: Phase | null; saved: SavedSession | null }
   outage: { since: number | null; holding: boolean; resumePhase: Phase | null }
   idle: { warning: boolean; remainSec: number }
+  maintenance: { screen: 'closed' | 'pin' | 'open'; error: string | null; lockRemain: number }
   notice: string | null
   devPanelOpen: boolean
   completedCopies: number
   fileDeleted: boolean
+  /** True when the operator configured this kiosk for offline use. */
+  offlineMode: boolean
 }
 
 export type KioskEvent =
@@ -140,6 +196,7 @@ export type KioskEvent =
       online: boolean
       licenseOk: boolean
       printer: PrinterHealth
+      offlineMode?: boolean
     }
   | {
       type: 'RECOVERY_FOUND'
@@ -148,6 +205,7 @@ export type KioskEvent =
       printer: PrinterHealth
       powerLostAt: number
       session: SavedSession
+      offlineMode?: boolean
     }
   | { type: 'SYSTEM_STATUS'; online: boolean; licenseOk: boolean; printer: PrinterHealth }
   | { type: 'RETRY_SETUP' }
@@ -196,6 +254,18 @@ export type KioskEvent =
   | { type: 'REPORT_SUBMIT' }
   | { type: 'REPORT_BACK' }
   | { type: 'TICK' }
+  | { type: 'SETUP_START' }
+  | { type: 'SETUP_COMPLETE' }
+  | { type: 'OPEN_WEBSITE' }
+  | { type: 'WEBSITE_CLOSE' }
+  | { type: 'MAINTENANCE_OPEN'; lockedFor?: number }
+  | { type: 'MAINTENANCE_CLOSE' }
+  /** Interceptor event — the orchestration hook verifies the PIN against the stored config. */
+  | { type: 'MAINTENANCE_SUBMIT_PIN'; pin: string }
+  | { type: 'MAINTENANCE_PIN_RESULT'; ok: boolean; message: string | null; lockedFor: number }
+  /** Interceptor event — the orchestration hook clears the kiosk configuration. */
+  | { type: 'MAINTENANCE_CONFIRM_RESET' }
+  | { type: 'MAINTENANCE_RESET' }
   | { type: 'ACTIVITY' }
   | { type: 'IDLE_WARN' }
   | { type: 'IDLE_DISMISS' }

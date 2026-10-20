@@ -3,7 +3,15 @@
 import { useCallback, useEffect, useReducer, useRef } from 'react'
 import { IDLE_WARN_SEC, initialState, reducer, RESUMABLE_PHASES } from './machine'
 import type { KioskEvent, KioskState } from './types'
-import { cashService, intakeService, printerService, storageService, systemService, walletService } from '@/kiosk/services'
+import {
+  cashService,
+  intakeService,
+  kioskConfigService,
+  printerService,
+  storageService,
+  systemService,
+  walletService,
+} from '@/kiosk/services'
 
 const IDLE_WARN_AFTER_MS = 90_000
 const OUTAGE_HOLD_AFTER_MS = 20_000
@@ -24,8 +32,8 @@ export function useKioskMachine(): { state: KioskState; dispatch: (event: KioskE
   stateRef.current = state
   const activityRef = useRef(Date.now())
 
-  /* Wrap dispatch: "recover previous transaction" reads storage, then feeds
-     the same RECOVERY_FOUND event the boot sequence uses. */
+  /* Wrap dispatch: some events need a service round-trip before they reach
+     the reducer (recovery lookup, PIN verification, kiosk reset). */
   const dispatch = useCallback((event: KioskEvent) => {
     if (event.type === 'OPEN_RECOVERY') {
       const stored = storageService.load()
@@ -38,10 +46,40 @@ export function useKioskMachine(): { state: KioskState; dispatch: (event: KioskE
           printer: stateRef.current.printer,
           powerLostAt: stored.powerLostAt ?? s.savedAt,
           session: s,
+          offlineMode: stateRef.current.offlineMode,
         })
       } else {
         rawDispatch({ type: 'RECOVERY_FOUND_NOTHING' })
       }
+      return
+    }
+    if (event.type === 'MAINTENANCE_OPEN') {
+      // Re-attach any lockout that is still active at the service level.
+      rawDispatch({ type: 'MAINTENANCE_OPEN', lockedFor: kioskConfigService.pinLockRemaining() })
+      return
+    }
+    if (event.type === 'MAINTENANCE_SUBMIT_PIN') {
+      const res = kioskConfigService.verifyOperatorPin(event.pin)
+      rawDispatch(
+        res.ok
+          ? { type: 'MAINTENANCE_PIN_RESULT', ok: true, message: null, lockedFor: 0 }
+          : {
+              type: 'MAINTENANCE_PIN_RESULT',
+              ok: false,
+              message:
+                res.lockedFor > 0
+                  ? `Maintenance is locked. Try again in ${res.lockedFor} seconds.`
+                  : 'Incorrect PIN. Try again.',
+              lockedFor: res.lockedFor,
+            },
+      )
+      return
+    }
+    if (event.type === 'MAINTENANCE_CONFIRM_RESET') {
+      // Clears license + configuration; held customer sessions are kept.
+      kioskConfigService.resetKiosk()
+      rawDispatch({ type: 'MAINTENANCE_CLOSE' })
+      rawDispatch({ type: 'MAINTENANCE_RESET' })
       return
     }
     rawDispatch(event)
@@ -57,22 +95,32 @@ export function useKioskMachine(): { state: KioskState; dispatch: (event: KioskE
       const sys = systemService.check()
       const printer = await printerService.health()
       if (cancelled) return
+      const cfg = kioskConfigService.load()
+      // A factory-fresh (or reset) kiosk must be provisioned before customers
+      // can reach any other screen.
+      if (!cfg) {
+        rawDispatch({ type: 'SETUP_START' })
+        return
+      }
+      const online = cfg.mode === 'offline' ? false : sys.online
+      const offlineMode = cfg.mode === 'offline'
       const stored = storageService.load()
       const resumable =
         stored.session !== null && RESUMABLE_PHASES.includes(stored.session.phase)
       if (stored.powerLostAt && stored.session && resumable) {
         dispatch({
           type: 'RECOVERY_FOUND',
-          online: sys.online,
+          online,
           licenseOk: sys.licenseOk,
           printer,
           powerLostAt: stored.powerLostAt,
           session: stored.session,
+          offlineMode,
         })
         return
       }
       if (stored.powerLostAt) storageService.clear()
-      dispatch({ type: 'BOOT_READY', online: sys.online, licenseOk: sys.licenseOk, printer })
+      dispatch({ type: 'BOOT_READY', online, licenseOk: sys.licenseOk, printer, offlineMode })
     }
     void run()
     return () => {
@@ -132,7 +180,9 @@ export function useKioskMachine(): { state: KioskState; dispatch: (event: KioskE
       const sys = systemService.check()
       const printer = await printerService.health()
       if (cancelled) return
-      dispatch({ type: 'SYSTEM_STATUS', online: sys.online, licenseOk: sys.licenseOk, printer })
+      const cfg = kioskConfigService.load()
+      const online = cfg?.mode === 'offline' ? false : sys.online
+      dispatch({ type: 'SYSTEM_STATUS', online, licenseOk: sys.licenseOk, printer })
     }
     const iv = setInterval(() => void poll(), 4000)
     return () => {
@@ -175,9 +225,17 @@ export function useKioskMachine(): { state: KioskState; dispatch: (event: KioskE
     }
   }, [])
 
-  /* ---------- persistence (power recovery) ---------- */
+  /* ---------- persistence (power recovery) ----------
+     Setup and maintenance phases hold no customer data — never overwrite
+     a held transaction with them. A held transaction also stays recoverable
+     while the kiosk waits at the welcome screen (after setup, reset or a
+     boot); starting a fresh order replaces it. */
   useEffect(() => {
-    if (state.phase === 'BOOT') return
+    if (state.phase === 'BOOT' || state.phase === 'FIRST_RUN_SETUP') return
+    if (state.phase === 'WELCOME') {
+      const stored = storageService.load()
+      if (stored.session && RESUMABLE_PHASES.includes(stored.session.phase)) return
+    }
     storageService.save(state)
   }, [state])
 
