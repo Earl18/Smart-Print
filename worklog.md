@@ -280,3 +280,19 @@ Work Log:
 
 Stage Summary:
 - Logo-free Welcome hero with stronger typographic identity; all flows and route linkages intact; Neo-Brutalist tokens unchanged.
+
+---
+Task ID: 12
+Agent: lead (Z.ai Code)
+Task: Welcome screen must fit on a single kiosk screen — no scrolling to reach any info
+
+Work Log:
+- Measured the overflow: at ~1104×756 the text-6xl sticker headline wrapped into a tall box, CTAs stacked, and py-14/gap-5 rhythm pushed the send-tiles + status pills below the fold (main scrollHeight 858 vs 676 available).
+- Compacted src/kiosk/screens/WelcomeScreen.tsx into a strict one-screen layout: headline now viewport-scaled via text-[length:clamp(2.25rem,4.2vw,3.75rem)] so the lime sticker line stays on ONE line at every kiosk width; tighter py (sm:py-6) and gap rhythm (gap-4 / group gap-3.5 sm:gap-4); send tiles compacted to row style (p-2.5, size-9 icon tiles, 11px hints, 3-col from 520px); "Today at this kiosk" card slimmed (p-5, tighter list, mt-4 recover link) and its printer-status row hidden below lg (duplicated by the status pill).
+- Verified by measuring main scrollHeight vs clientHeight in a real browser at 1104×756, 1024×768, 1280×800, 1920×1080: all fit (content < available), zero scroll.
+- Discovered a runtime notice ("Nothing to recover…", set after Recover with no session / session-expired) adds ~70px — re-verified WITH the notice visible: still fits at all landscape kiosk sizes (was the hidden regression in the first pass).
+- Narrow/portrait widths (<1024): tiles go 3-col early and card printer-row hides, overflow at 600×900 reduced 252px→103px; portrait remains slightly scrollable (landscape is the kiosk form factor). Phone 375px scrolls naturally.
+- Interactions re-tested after compaction: Start printing → Preferences → Back, Recover notice renders; lint clean; tsc clean for src (only pre-existing examples/skills errors); zero console/page errors.
+
+Stage Summary:
+- Welcome is now a true single-screen kiosk hero at 1024×768 → 1920×1080, resilient to the runtime notice state; no layout or flow regressions.

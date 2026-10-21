@@ -37,7 +37,7 @@ function requestFullscreenIfPossible() {
 }
 
 const SEND_FROM_TILES = [
-  { icon: QrCode, tone: 'kb-blue', title: 'QR code', hint: 'Scan with your phone camera' },
+  { icon: QrCode, tone: 'kb-blue', title: 'QR code', hint: 'Scan with your phone' },
   { icon: Bluetooth, tone: 'kb-lime', title: 'Bluetooth', hint: 'Send wirelessly, no cables' },
   { icon: Usb, tone: 'kb-coral', title: 'USB drive', hint: 'Plug in your flash drive' },
 ] as const
@@ -48,45 +48,51 @@ const TODAY_ROWS = [
   { icon: ShieldCheck, tone: 'kb-coral', text: 'Your file is deleted from the kiosk after printing' },
 ] as const
 
+/**
+ * Welcome screen — designed to fit every kiosk viewport (>= 768px tall)
+ * on a single screen with no scrolling: viewport-scaled headline,
+ * compact vertical rhythm and one-glance info card.
+ */
 export function WelcomeScreen() {
   const { state, dispatch } = useKiosk()
   const printerOk = state.printer.ready && state.printer.paper !== 'out'
 
   return (
-    <div className="mx-auto grid w-full max-w-[1280px] items-center gap-8 px-4 py-10 sm:px-8 sm:py-14 lg:grid-cols-[1.15fr_0.85fr]">
+    <div className="mx-auto grid w-full max-w-[1280px] items-center gap-6 px-4 py-5 sm:px-8 sm:py-6 lg:grid-cols-[1.15fr_0.85fr] lg:gap-10">
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35 }}
-        className="flex flex-col items-start gap-6 sm:gap-7"
+        className="flex flex-col items-start gap-4"
       >
         {/* Brand eyebrow — typographic mark in place of the logo */}
         <div className="flex items-center gap-3">
           <span className="flex items-center gap-1.5" aria-hidden>
-            <span className="size-3.5 rounded-full border-2 border-black bg-klime" />
-            <span className="size-3.5 rounded-full border-2 border-black bg-kcoral" />
-            <span className="size-3.5 rounded-full border-2 border-black bg-kblue" />
+            <span className="size-3 rounded-full border-2 border-black bg-klime" />
+            <span className="size-3 rounded-full border-2 border-black bg-kcoral" />
+            <span className="size-3 rounded-full border-2 border-black bg-kblue" />
           </span>
-          <span className="text-xs font-bold uppercase tracking-[0.22em] text-black/60 sm:text-sm">
+          <span className="text-xs font-bold uppercase tracking-[0.22em] text-black/60">
             Smart Print · Self-service printing
           </span>
         </div>
 
-        {/* Hero headline — carries the brand now that the mark is gone */}
-        <h1 className="font-display text-4xl font-bold leading-[1.08] tracking-tight sm:text-6xl">
+        {/* Hero headline — viewport-scaled so the sticker line never wraps
+            into a tall block on mid-size kiosk panels */}
+        <h1 className="font-display text-[length:clamp(2.25rem,4.2vw,3.75rem)] font-bold leading-[1.08] tracking-tight">
           Print anything.
           <br />
-          <span className="mt-3 inline-block rounded-2xl border-[3px] border-black bg-klime px-3 pb-1.5 shadow-[5px_5px_0_#000] sm:mt-4 sm:px-5 sm:pb-2.5">
+          <span className="mt-1.5 inline-block rounded-2xl border-[3px] border-black bg-klime px-3 pb-1 shadow-[5px_5px_0_#000] sm:px-4">
             Right here, right now.
           </span>
         </h1>
-        <p className="-mt-1 max-w-xl text-base font-medium text-black/70 sm:text-lg">
+        <p className="-mt-1 max-w-xl text-base font-medium text-black/70">
           Send a file from your phone or USB drive, pick your options, pay, and collect your prints — no app
           needed.
         </p>
 
-        <div className="flex w-full flex-col gap-6">
-          <div className="flex flex-wrap items-center gap-4">
+        <div className="flex flex-col gap-3.5 sm:gap-4">
+          <div className="flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
             <KButton
               size="xl"
               icon={ArrowRight}
@@ -101,6 +107,7 @@ export function WelcomeScreen() {
             {state.online ? (
               <KButton
                 tone="white"
+                size="lg"
                 icon={Globe}
                 onClick={() => {
                   window.location.href = '/?from=kiosk'
@@ -112,25 +119,25 @@ export function WelcomeScreen() {
           </div>
 
           <div className="w-full">
-            <p className="mb-2.5 text-sm font-bold uppercase tracking-wide text-black/60">Send files from</p>
-            <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-3">
+            <p className="mb-2 text-sm font-bold uppercase tracking-wide text-black/60">Send files from</p>
+            <div className="grid w-full grid-cols-3 gap-2.5 max-[479px]:grid-cols-1 sm:gap-3">
               {SEND_FROM_TILES.map(({ icon: Icon, tone, title, hint }) => (
-                <div key={title} className="kb-card-flat flex items-center gap-3 p-3 sm:flex-col sm:items-start sm:gap-2.5 sm:p-4">
+                <div key={title} className="kb-card-flat flex items-center gap-2.5 p-2.5">
                   <span
-                    className={`${tone} flex size-12 shrink-0 items-center justify-center rounded-xl border-[3px] border-black shadow-[3px_3px_0_#000]`}
+                    className={`${tone} flex size-9 shrink-0 items-center justify-center rounded-lg border-[3px] border-black shadow-[3px_3px_0_#000]`}
                   >
-                    <Icon className="size-6" strokeWidth={2.5} aria-hidden />
+                    <Icon className="size-5" strokeWidth={2.5} aria-hidden />
                   </span>
                   <span className="min-w-0">
-                    <span className="block font-display text-base font-bold leading-tight sm:text-lg">{title}</span>
-                    <span className="block text-sm font-medium leading-snug text-black/60">{hint}</span>
+                    <span className="block font-display text-[15px] font-bold leading-tight">{title}</span>
+                    <span className="block text-[11px] font-medium leading-snug text-black/60">{hint}</span>
                   </span>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2">
             {printerOk ? (
               <StatusPill tone="ok" icon={CheckCircle2}>
                 Ready to print now
@@ -149,22 +156,22 @@ export function WelcomeScreen() {
         </div>
       </motion.div>
 
-      <KCard className="w-full">
-        <h2 className="font-display text-xl font-bold sm:text-2xl">Today at this kiosk</h2>
-        <ul className="mt-4 space-y-3">
+      <KCard className="w-full p-5 sm:p-6">
+        <h2 className="font-display text-xl font-bold">Today at this kiosk</h2>
+        <ul className="mt-2.5 space-y-2">
           {TODAY_ROWS.map(({ icon: Icon, tone, text }) => (
             <li key={text} className="flex items-center gap-3">
               <span
-                className={`${tone} flex size-11 shrink-0 items-center justify-center rounded-xl border-[3px] border-black shadow-[3px_3px_0_#000]`}
+                className={`${tone} flex size-10 shrink-0 items-center justify-center rounded-xl border-[3px] border-black shadow-[3px_3px_0_#000]`}
               >
                 <Icon className="size-5" strokeWidth={2.5} aria-hidden />
               </span>
-              <span className="text-[15px] font-semibold">{text}</span>
+              <span className="text-[15px] font-semibold leading-snug">{text}</span>
             </li>
           ))}
-          <li className="flex items-center gap-3">
+          <li className="hidden items-center gap-3 lg:flex">
             <span
-              className={`flex size-11 shrink-0 items-center justify-center rounded-xl border-[3px] border-black shadow-[3px_3px_0_#000] ${
+              className={`flex size-10 shrink-0 items-center justify-center rounded-xl border-[3px] border-black shadow-[3px_3px_0_#000] ${
                 printerOk ? 'kb-lime' : 'kb-coral'
               }`}
             >
@@ -174,14 +181,14 @@ export function WelcomeScreen() {
                 <TriangleAlert className="size-5" strokeWidth={2.5} aria-hidden />
               )}
             </span>
-            <span className="text-[15px] font-semibold">{state.printer.message}</span>
+            <span className="text-[15px] font-semibold leading-snug">{state.printer.message}</span>
           </li>
         </ul>
 
         <button
           type="button"
           onClick={() => dispatch({ type: 'OPEN_RECOVERY' })}
-          className="mt-6 inline-flex min-h-16 items-center gap-2 font-display text-base font-bold underline decoration-[3px] underline-offset-4 hover:bg-klime focus-visible:outline-[3px]"
+          className="mt-4 inline-flex min-h-14 items-center gap-2 font-display text-base font-bold underline decoration-[3px] underline-offset-4 hover:bg-klime focus-visible:outline-[3px]"
         >
           <History className="size-5" strokeWidth={2.5} aria-hidden />
           Recover previous transaction
