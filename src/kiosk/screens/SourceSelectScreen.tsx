@@ -1,7 +1,8 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Bluetooth, QrCode, Usb, WifiOff, type LucideIcon } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Bluetooth, QrCode, Smartphone, Usb, WifiOff, type LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useKiosk } from '@/kiosk/KioskContext'
 import { KButton, SectionHeading, StatusPill } from '@/kiosk/components/primitives'
@@ -32,6 +33,16 @@ const SOURCES: SourceOption[] = [
 
 export function SourceSelectScreen() {
   const { state, dispatch } = useKiosk()
+  const router = useRouter()
+
+  /* Tapping the QR card opens the phone upload page for this transaction —
+     the same page a phone opens after scanning the code. The kiosk keeps
+     its session, and the file lands in the document scan step on return. */
+  const openUploadPage = () => {
+    dispatch({ type: 'PICK_SOURCE', source: 'qr' })
+    const sessionId = state.payment.orderRef || 'SP-TEMP'
+    router.push(`/upload/${encodeURIComponent(sessionId)}?from=kiosk`)
+  }
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-8 sm:py-10">
@@ -51,7 +62,13 @@ export function SourceSelectScreen() {
                 key={source}
                 type="button"
                 disabled={needsInternet}
-                onClick={() => dispatch({ type: 'PICK_SOURCE', source })}
+                onClick={() => {
+                  if (source === 'qr') {
+                    openUploadPage()
+                    return
+                  }
+                  dispatch({ type: 'PICK_SOURCE', source })
+                }}
                 className="kb-chip w-full flex-col items-start! justify-start! gap-3! min-h-[190px]! p-5! rounded-2xl!"
               >
                 <span
@@ -64,6 +81,12 @@ export function SourceSelectScreen() {
                 </span>
                 <span className="font-display text-xl font-bold sm:text-2xl">{title}</span>
                 <span className="text-[15px] font-semibold text-black/70">{blurb}</span>
+                {source === 'qr' && !needsInternet ? (
+                  <span className="mt-auto flex items-center gap-2 pt-2 text-sm font-bold text-black/70">
+                    <Smartphone className="size-4" strokeWidth={2.5} aria-hidden />
+                    Tap to open the upload page
+                  </span>
+                ) : null}
                 {needsInternet ? (
                   <span className="mt-auto flex flex-col items-start gap-2.5 pt-2">
                     <StatusPill tone="error" icon={WifiOff}>

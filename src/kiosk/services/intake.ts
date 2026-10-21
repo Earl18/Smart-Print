@@ -27,6 +27,30 @@ function docForUsbFile(f: UsbFile): DocMeta {
   }
 }
 
+/** Builds the document record for a file sent from the phone upload page. */
+export function docForPhoneFile(file: { fileName: string; sizeBytes: number; fileType: string }): DocMeta {
+  const ext = file.fileType || (file.fileName.includes('.') ? (file.fileName.split('.').pop() ?? 'bin').toLowerCase() : 'bin')
+  const kind: DocMeta['kind'] =
+    ext === 'pdf'
+      ? 'pdf'
+      : ['jpg', 'jpeg', 'png'].includes(ext)
+        ? 'image'
+        : ['doc', 'docx'].includes(ext)
+          ? 'document'
+          : 'unknown'
+  const base = { name: file.fileName, ext, sizeBytes: file.sizeBytes, kind }
+  switch (kind) {
+    case 'pdf':
+      return { ...base, pages: 3, images: 1 }
+    case 'document':
+      return { ...base, pages: 4, images: 2 }
+    case 'image':
+      return { ...base, pages: 1, images: 1 }
+    default:
+      return { ...base, pages: 1, images: 0 }
+  }
+}
+
 const DEFAULT_DOCS: Record<Exclude<FileSource, 'usb'>, DocMeta> = {
   qr: { name: 'phone-upload.pdf', ext: 'pdf', sizeBytes: 1_842_000, kind: 'pdf', pages: 3, images: 2 },
   bluetooth: { name: 'Group-Project-Notes.pdf', ext: 'pdf', sizeBytes: 1_118_000, kind: 'pdf', pages: 4, images: 1 },

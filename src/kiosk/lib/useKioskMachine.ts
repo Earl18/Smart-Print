@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useReducer, useRef } from 'react'
 import { IDLE_WARN_SEC, initialState, reducer, RESUMABLE_PHASES } from './machine'
 import type { KioskEvent, KioskState } from './types'
+import { docForPhoneFile } from '@/kiosk/services/intake'
 import {
   cashService,
   intakeService,
@@ -107,6 +108,52 @@ export function useKioskMachine(): { state: KioskState; dispatch: (event: KioskE
       const stored = storageService.load()
       const resumable =
         stored.session !== null && RESUMABLE_PHASES.includes(stored.session.phase)
+      /* Returning from the phone upload page (?returned=1) resumes the
+         saved session straight away instead of showing the recovery prompt. */
+      const autoResume =
+        !stored.powerLostAt &&
+        resumable &&
+        typeof window !== 'undefined' &&
+        new URLSearchParams(window.location.search).has('returned')
+      if (autoResume && stored.session) {
+        const saved = stored.session
+        dispatch({
+          type: 'RECOVERY_FOUND',
+          online,
+          licenseOk: sys.licenseOk,
+          printer,
+          powerLostAt: stored.powerLostAt ?? saved.savedAt,
+          session: saved,
+          offlineMode,
+        })
+        // Restore the saved slice first (prefs, price, order ref) — the
+        // reducer lands on SOURCE_SELECT for sessions saved while receiving.
+        dispatch({ type: 'RESUME_RECOVERED' })
+        if (saved.phase === 'RECEIVING' && saved.source === 'qr') {
+          // A file may already be waiting on the upload service — re-enter
+          // the QR channel and hand the file straight to the scan step.
+          try {
+            const res = await fetch(`/api/upload/file?sessionId=${encodeURIComponent(saved.payment.orderRef)}`, {
+              cache: 'no-store',
+            })
+            const data = (await res.json()) as {
+              status: string
+              file?: { fileName: string; sizeBytes: number; fileType: string }
+            }
+            if (data.status === 'received' && data.file) {
+              dispatch({ type: 'PICK_SOURCE', source: 'qr' })
+              dispatch({ type: 'INTAKE_RECEIVED', doc: docForPhoneFile(data.file) })
+              void fetch(`/api/upload/file?sessionId=${encodeURIComponent(saved.payment.orderRef)}`, {
+                method: 'DELETE',
+              })
+              return
+            }
+          } catch {
+            /* upload service unreachable — stay on the resumed step */
+          }
+        }
+        return
+      }
       if (stored.powerLostAt && stored.session && resumable) {
         dispatch({
           type: 'RECOVERY_FOUND',
@@ -271,6 +318,60 @@ export function useKioskMachine(): { state: KioskState; dispatch: (event: KioskE
       intakeService.pickUsbFile(state.intake.fileName)
     }
   }, [state.phase, state.intake.status, state.intake.fileName])
+
+  /* ---------- phone upload: register the session while the QR screen shows ---- */
+  useEffect(() => {
+    if (state.phase !== 'RECEIVING' || state.source !== 'qr') return
+    const s = stateRef.current
+    const sessionId = s.payment.orderRef || 'SP-TEMP'
+    const controller = new AbortController()
+    void fetch('/api/upload/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sessionId,
+        kioskName: kioskConfigService.load()?.license.kioskName ?? 'Smart Print kiosk',
+        prefs: s.prefs,
+      }),
+      signal: controller.signal,
+    }).catch(() => {
+      /* offline kiosks never reach the QR step; a blip here just means the
+         phone page will show its connection-lost state until it retries */
+    })
+    return () => controller.abort()
+  }, [state.phase, state.source, state.payment.orderRef, state.prefs])
+
+  /* ---------- phone upload: poll for the file sent from the phone ---------- */
+  useEffect(() => {
+    if (state.phase !== 'RECEIVING' || state.source !== 'qr') return
+    const sessionId = stateRef.current.payment.orderRef || 'SP-TEMP'
+    let stop = false
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/upload/file?sessionId=${encodeURIComponent(sessionId)}`, {
+          cache: 'no-store',
+        })
+        if (!res.ok) return
+        const data = (await res.json()) as {
+          status: string
+          file?: { fileName: string; sizeBytes: number; fileType: string }
+        }
+        if (stop) return
+        if (data.status === 'received' && data.file) {
+          dispatch({ type: 'INTAKE_RECEIVED', doc: docForPhoneFile(data.file) })
+          void fetch(`/api/upload/file?sessionId=${encodeURIComponent(sessionId)}`, { method: 'DELETE' })
+        }
+      } catch {
+        /* keep polling — the phone may still be sending */
+      }
+    }
+    void poll()
+    const iv = setInterval(() => void poll(), 2000)
+    return () => {
+      stop = true
+      clearInterval(iv)
+    }
+  }, [state.phase, state.source])
 
   /* ---------- receiving: cancel intake when it times out or errors ---------- */
   useEffect(() => {

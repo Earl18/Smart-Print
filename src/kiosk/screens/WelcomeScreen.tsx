@@ -76,7 +76,9 @@ export function WelcomeScreen() {
                 tone="white"
                 icon={Globe}
                 className="self-start"
-                onClick={() => dispatch({ type: 'OPEN_WEBSITE' })}
+                onClick={() => {
+                  window.location.href = '/?from=kiosk'
+                }}
               >
                 Visit Smart Print website
               </KButton>
