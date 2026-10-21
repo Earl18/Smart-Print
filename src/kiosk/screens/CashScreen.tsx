@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion'
 import { CheckCircle2, Hourglass, Info, Loader2, TriangleAlert, X } from 'lucide-react'
 import { useKiosk } from '@/kiosk/KioskContext'
-import { Chip, KButton, KCard, KeyVal, Money, ProgressBar, SectionHeading } from '@/kiosk/components/primitives'
+import { KButton, KCard, KeyVal, Money, ProgressBar } from '@/kiosk/components/primitives'
 import { PriceSummary } from '@/kiosk/components/PriceSummary'
 import { formatCountdown, formatPeso } from '@/kiosk/lib/format'
 import { CASH_TIMEOUT_SEC } from '@/kiosk/lib/machine'
@@ -11,6 +11,13 @@ import { CASH_TIMEOUT_SEC } from '@/kiosk/lib/machine'
 /** Bill denominations accepted by the kiosk's cash acceptor. */
 const CASH_DENOMINATIONS = [20, 50, 100, 200, 500, 1000]
 
+/**
+ * Cash payment — fits every kiosk viewport (>= 768px tall) on a single
+ * screen: the amount due and accepted bills sit left while the live
+ * received/remaining counters, timer and guidance share the right side
+ * of the same card, and the policy note + cancel action share one
+ * compact footer row.
+ */
 export function CashScreen() {
   const { state, dispatch } = useKiosk()
   const { payment } = state
@@ -21,85 +28,96 @@ export function CashScreen() {
   const timePct = Math.max(0, Math.min(100, (payment.deadlineSec / CASH_TIMEOUT_SEC) * 100))
 
   return (
-    <div className="mx-auto w-full max-w-[1280px] px-4 py-6 sm:px-8 sm:py-10">
+    <div className="mx-auto w-full max-w-[1280px] px-4 py-5 sm:px-8 sm:py-6">
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-        <SectionHeading sub="Insert bills one at a time into the bill acceptor below the screen.">
-          Cash payment
-        </SectionHeading>
+        <h2 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">Cash payment</h2>
+        <p className="mt-1 text-sm font-medium text-black/70 sm:text-base">
+          Insert bills one at a time into the bill acceptor below the screen.
+        </p>
 
-        <div className="mt-6 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_400px]">
-          <div className="flex flex-col gap-6">
-            {/* Main card */}
-            <KCard>
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <h3 className="font-display text-2xl font-bold sm:text-3xl">Insert cash</h3>
-                <Chip className="font-mono text-sm sm:text-base">Ref {payment.reference}</Chip>
+        <div className="mt-4 grid items-start gap-4 sm:gap-5 lg:grid-cols-[minmax(0,1fr)_400px]">
+          <div className="flex min-w-0 flex-col gap-4">
+            {/* Main card — amount + bills left, live counters and timer right */}
+            <KCard className="p-4 sm:p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h3 className="font-display text-xl font-bold sm:text-2xl">Insert cash</h3>
+                <span className="inline-flex items-center rounded-lg border-[3px] border-black bg-white px-3 py-1 font-mono text-sm font-bold">
+                  Ref {payment.reference}
+                </span>
               </div>
 
-              <p className="mt-6 text-sm font-bold uppercase tracking-wide text-black/60">Amount due</p>
-              <Money value={payment.due} className="text-5xl sm:text-6xl" />
-
               {collecting ? (
-                <>
-                  <div className="mt-6 grid grid-cols-2 gap-4">
-                    <div className="kb-card-flat px-4 py-3">
-                      <p className="text-xs font-bold uppercase tracking-wide text-black/60">Received so far</p>
-                      <Money value={payment.received} className="mt-1 text-3xl" />
-                    </div>
-                    <div className="kb-card-flat px-4 py-3">
-                      <p className="text-xs font-bold uppercase tracking-wide text-black/60">Remaining</p>
-                      <Money value={remaining} className="mt-1 text-3xl" />
-                    </div>
-                  </div>
+                <div className="mt-4 grid items-start gap-5 sm:grid-cols-[190px_minmax(0,1fr)]">
+                  {/* Amount due + accepted bills */}
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wide text-black/60">Amount due</p>
+                    <Money value={payment.due} className="text-5xl" />
 
-                  <ProgressBar
-                    className="mt-6"
-                    value={timePct}
-                    tone={payment.deadlineSec < 30 ? 'coral' : 'lime'}
-                    label="Time remaining to pay"
-                  />
-                  <p className="mt-3 font-display text-xl font-bold">
-                    Insert money before timer ends — {formatCountdown(payment.deadlineSec)}
-                  </p>
-
-                  <div className="mt-5 flex items-start gap-2">
-                    <Info className="mt-0.5 size-5 shrink-0" strokeWidth={2.5} aria-hidden />
-                    <p className="text-sm font-semibold sm:text-base">Please pay the exact amount.</p>
-                  </div>
-
-                  <div className="mt-3">
-                    <p className="text-xs font-bold uppercase tracking-wide text-black/60">Accepted bills</p>
-                    <div className="mt-2 flex flex-wrap gap-2">
+                    <p className="mt-4 text-xs font-bold uppercase tracking-wide text-black/60">Accepted bills</p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
                       {CASH_DENOMINATIONS.map((d) => (
-                        <Chip key={d} className="font-display text-base">
+                        <span
+                          key={d}
+                          className="inline-flex items-center rounded-lg border-[3px] border-black bg-white px-2 py-0.5 font-display text-sm font-bold"
+                        >
                           {formatPeso(d)}
-                        </Chip>
+                        </span>
                       ))}
                     </div>
                   </div>
-                </>
+
+                  {/* Live counters, timer and guidance */}
+                  <div className="min-w-0">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="kb-card-flat px-3 py-2">
+                        <p className="text-xs font-bold uppercase tracking-wide text-black/60">Received so far</p>
+                        <Money value={payment.received} className="text-2xl" />
+                      </div>
+                      <div className="kb-card-flat px-3 py-2">
+                        <p className="text-xs font-bold uppercase tracking-wide text-black/60">Remaining</p>
+                        <Money value={remaining} className="text-2xl" />
+                      </div>
+                    </div>
+
+                    <ProgressBar
+                      className="mt-3"
+                      value={timePct}
+                      tone={payment.deadlineSec < 30 ? 'coral' : 'lime'}
+                      label="Time remaining to pay"
+                    />
+
+                    <p className="mt-2.5 font-display text-lg font-bold tabular-nums">
+                      {formatCountdown(payment.deadlineSec)} to pay
+                    </p>
+
+                    <div className="mt-2 flex items-start gap-2">
+                      <Info className="mt-0.5 size-5 shrink-0" strokeWidth={2.5} aria-hidden />
+                      <p className="text-sm font-semibold">Please pay the exact amount.</p>
+                    </div>
+                  </div>
+                </div>
               ) : null}
             </KCard>
 
             {/* Success */}
             {payment.status === 'confirmed' ? (
-              <KCard tone="lime">
+              <KCard tone="lime" className="p-4 sm:p-5">
                 <div className="flex items-center gap-3">
-                  <CheckCircle2 className="size-8 shrink-0" strokeWidth={2.5} aria-hidden />
-                  <h3 className="font-display text-2xl font-bold">Payment received</h3>
+                  <CheckCircle2 className="size-7 shrink-0" strokeWidth={2.5} aria-hidden />
+                  <h3 className="font-display text-xl font-bold">Payment received</h3>
                 </div>
 
-                <div className="mt-4">
+                <div className="mt-2">
                   <KeyVal k="Price" v={<Money value={payment.due} />} />
                   <KeyVal k="Amount received" v={<Money value={payment.received} />} />
                   <KeyVal k="Excess to return" v={<Money value={payment.excess} />} />
                 </div>
 
-                <p className="mt-3 text-sm font-semibold">
+                <p className="mt-2 text-sm font-semibold">
                   Excess is returned from the cash tray below the keypad.
                 </p>
 
-                <div className="mt-4 flex items-center gap-2 font-semibold">
+                <div className="mt-2 flex items-center gap-2 text-[15px] font-semibold">
                   <Loader2 className="size-5 shrink-0 animate-spin" strokeWidth={2.5} aria-hidden />
                   <span>Starting your print job…</span>
                 </div>
@@ -108,13 +126,13 @@ export function CashScreen() {
 
             {/* Timed out */}
             {payment.status === 'expired' ? (
-              <KCard tone="coral">
+              <KCard tone="coral" className="p-4 sm:p-5">
                 <div className="flex items-center gap-3">
-                  <Hourglass className="size-8 shrink-0" strokeWidth={2.5} aria-hidden />
-                  <h3 className="font-display text-2xl font-bold">Payment timed out</h3>
+                  <Hourglass className="size-7 shrink-0" strokeWidth={2.5} aria-hidden />
+                  <h3 className="font-display text-xl font-bold">Payment timed out</h3>
                 </div>
-                <p className="mt-3 text-base font-semibold">{payment.message}</p>
-                <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                <p className="mt-2 text-[15px] font-semibold">{payment.message}</p>
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row">
                   <KButton tone="lime" onClick={() => dispatch({ type: 'PAYMENT_RETRY' })}>
                     Try again
                   </KButton>
@@ -127,14 +145,14 @@ export function CashScreen() {
 
             {/* Failed */}
             {payment.status === 'failed' ? (
-              <KCard tone="coral">
+              <KCard tone="coral" className="p-4 sm:p-5">
                 <div className="flex items-center gap-3">
-                  <TriangleAlert className="size-8 shrink-0" strokeWidth={2.5} aria-hidden />
-                  <h3 className="font-display text-2xl font-bold">Payment failed</h3>
+                  <TriangleAlert className="size-7 shrink-0" strokeWidth={2.5} aria-hidden />
+                  <h3 className="font-display text-xl font-bold">Payment failed</h3>
                 </div>
-                <p className="mt-3 text-base font-semibold">{payment.message}</p>
-                {payment.refundNote ? <p className="mt-2 text-base font-bold">{payment.refundNote}</p> : null}
-                <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                <p className="mt-2 text-[15px] font-semibold">{payment.message}</p>
+                {payment.refundNote ? <p className="mt-1 text-[15px] font-bold">{payment.refundNote}</p> : null}
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row">
                   <KButton tone="lime" onClick={() => dispatch({ type: 'PAYMENT_RETRY' })}>
                     Try again
                   </KButton>
@@ -145,14 +163,25 @@ export function CashScreen() {
               </KCard>
             ) : null}
 
-            {/* Footer */}
-            {awaiting ? (
-              <div>
-                <KButton tone="white" icon={X} onClick={() => dispatch({ type: 'PAYMENT_CANCEL' })}>
+            {/* Policy note + cancel action share one row to keep the screen above the fold */}
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-stretch">
+              <KCard tone="cream" className="flex flex-1 items-center gap-3 px-4 py-3">
+                <Info className="size-5 shrink-0" strokeWidth={2.5} aria-hidden />
+                <p className="text-sm font-semibold">
+                  Overpayments are automatically returned from the cash tray below the keypad.
+                </p>
+              </KCard>
+              {awaiting ? (
+                <KButton
+                  tone="white"
+                  icon={X}
+                  className="self-center"
+                  onClick={() => dispatch({ type: 'PAYMENT_CANCEL' })}
+                >
                   Cancel payment
                 </KButton>
-              </div>
-            ) : null}
+              ) : null}
+            </div>
           </div>
 
           <PriceSummary compact className="w-full" />

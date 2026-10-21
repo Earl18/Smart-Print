@@ -344,3 +344,19 @@ Work Log:
 
 Stage Summary:
 - E-wallet payment now fits every landscape kiosk viewport on a single screen in all gateway states (awaiting/confirmed/expired/failed); layout mirrors the Welcome screen's two-column fold-safe pattern.
+
+---
+Task ID: 16
+Agent: lead (Z.ai Code)
+Task: Cash payment screen must fit on one kiosk screen — same treatment as the e-wallet screen
+
+Work Log:
+- Measured the old CashScreen: ~790px stacked content (big amount → received/remaining grid → progress → countdown → exact-amount note → 6 denomination chips via kb-chip min-h-64, plus a lone cancel button row) vs ~676px available at 1104×756.
+- Rewrote src/kiosk/screens/CashScreen.tsx with the same fold-safe pattern as EwalletScreen: compact heading, slim mono Ref badge, card interior as a two-column grid (Amount due + Accepted-bills chips as small custom spans on the 190px left; received/remaining stat tiles, progress bar, "… to pay" countdown and exact-amount note on the right), cream policy note ("Overpayments are automatically returned…") + Cancel payment merged into one footer row, PriceSummary compact in the right rail. Confirmed/expired/failed cards compacted to match.
+- Verified by driving the real flow (Start → B/W → USB → Thesis-Final.pdf → Review → Cash): collecting state overflow = 0 at 1104×756, 1024×768, 1280×800, 1920×1080.
+- Verified bill insertion via the operator DevPanel cash acceptor: ₱20 inserted (received ₱20 / remaining ₱40) overflow = 0 incl. at 1024; then ₱50 overpay → confirmed state (Price ₱60 / received ₱70 / Excess to return ₱10) overflow = 0.
+- Recurring obstacle: the 90s+30s inactivity overlay kept interrupting between manual steps — solved by a dismiss() helper invoked before every chained step.
+- bun run lint clean; zero console/page errors.
+
+Stage Summary:
+- Cash payment now fits every landscape kiosk viewport on a single screen across collecting / confirmed / expired / failed states; both payment screens (e-wallet + cash) now share the same one-screen two-column card pattern.
