@@ -16,8 +16,7 @@ import {
   Usb,
 } from 'lucide-react'
 import { useKiosk } from '@/kiosk/KioskContext'
-import { KioskLogo } from '@/kiosk/components/Logo'
-import { Chip, KButton, KCard, Notice, SectionHeading, StatusPill } from '@/kiosk/components/primitives'
+import { KButton, KCard, Notice, StatusPill } from '@/kiosk/components/primitives'
 
 declare global {
   interface Window {
@@ -37,32 +36,60 @@ function requestFullscreenIfPossible() {
   }
 }
 
+const SEND_FROM_TILES = [
+  { icon: QrCode, tone: 'kb-blue', title: 'QR code', hint: 'Scan with your phone camera' },
+  { icon: Bluetooth, tone: 'kb-lime', title: 'Bluetooth', hint: 'Send wirelessly, no cables' },
+  { icon: Usb, tone: 'kb-coral', title: 'USB drive', hint: 'Plug in your flash drive' },
+] as const
+
+const TODAY_ROWS = [
+  { icon: Banknote, tone: 'kb-lime', text: 'Cash and e-wallet accepted · exact amount appreciated' },
+  { icon: Paperclip, tone: 'kb-blue', text: 'A4, Letter and A3 · black & white or colored' },
+  { icon: ShieldCheck, tone: 'kb-coral', text: 'Your file is deleted from the kiosk after printing' },
+] as const
+
 export function WelcomeScreen() {
   const { state, dispatch } = useKiosk()
+  const printerOk = state.printer.ready && state.printer.paper !== 'out'
 
   return (
-    <div className="mx-auto grid w-full max-w-[1280px] items-center gap-8 px-4 py-8 sm:px-8 sm:py-12 lg:grid-cols-[1.15fr_0.85fr]">
-      <div>
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35 }}
-          className="flex flex-col items-start gap-6"
-        >
-          {/* Brand mark — the same round printer logo used everywhere */}
-          <KioskLogo className="size-32 sm:size-44" />
+    <div className="mx-auto grid w-full max-w-[1280px] items-center gap-8 px-4 py-10 sm:px-8 sm:py-14 lg:grid-cols-[1.15fr_0.85fr]">
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35 }}
+        className="flex flex-col items-start gap-6 sm:gap-7"
+      >
+        {/* Brand eyebrow — typographic mark in place of the logo */}
+        <div className="flex items-center gap-3">
+          <span className="flex items-center gap-1.5" aria-hidden>
+            <span className="size-3.5 rounded-full border-2 border-black bg-klime" />
+            <span className="size-3.5 rounded-full border-2 border-black bg-kcoral" />
+            <span className="size-3.5 rounded-full border-2 border-black bg-kblue" />
+          </span>
+          <span className="text-xs font-bold uppercase tracking-[0.22em] text-black/60 sm:text-sm">
+            Smart Print · Self-service printing
+          </span>
+        </div>
 
-          <SectionHeading sub="Send a file from your phone or USB drive, pick your options, pay, and collect your prints — no app needed.">
-            Print anything.
-            <br />
+        {/* Hero headline — carries the brand now that the mark is gone */}
+        <h1 className="font-display text-4xl font-bold leading-[1.08] tracking-tight sm:text-6xl">
+          Print anything.
+          <br />
+          <span className="mt-3 inline-block rounded-2xl border-[3px] border-black bg-klime px-3 pb-1.5 shadow-[5px_5px_0_#000] sm:mt-4 sm:px-5 sm:pb-2.5">
             Right here, right now.
-          </SectionHeading>
+          </span>
+        </h1>
+        <p className="-mt-1 max-w-xl text-base font-medium text-black/70 sm:text-lg">
+          Send a file from your phone or USB drive, pick your options, pay, and collect your prints — no app
+          needed.
+        </p>
 
-          <div className="flex w-full flex-col gap-4">
+        <div className="flex w-full flex-col gap-6">
+          <div className="flex flex-wrap items-center gap-4">
             <KButton
               size="xl"
               icon={ArrowRight}
-              className="self-start"
               onClick={() => {
                 requestFullscreenIfPossible()
                 dispatch({ type: 'START_ORDER' })
@@ -75,7 +102,6 @@ export function WelcomeScreen() {
               <KButton
                 tone="white"
                 icon={Globe}
-                className="self-start"
                 onClick={() => {
                   window.location.href = '/?from=kiosk'
                 }}
@@ -83,70 +109,72 @@ export function WelcomeScreen() {
                 Visit Smart Print website
               </KButton>
             ) : null}
-
-            <div>
-              <p className="mb-2 text-sm font-bold uppercase tracking-wide text-black/60">Send files from</p>
-              <div className="flex flex-wrap gap-2.5">
-                <Chip icon={QrCode}>QR code</Chip>
-                <Chip icon={Bluetooth}>Bluetooth</Chip>
-                <Chip icon={Usb}>USB drive</Chip>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2.5">
-              {state.printer.ready && state.printer.paper !== 'out' ? (
-                <StatusPill tone="ok" icon={CheckCircle2}>
-                  Ready to print now
-                </StatusPill>
-              ) : (
-                <StatusPill tone="error" icon={TriangleAlert}>
-                  Printer needs attention
-                </StatusPill>
-              )}
-              <StatusPill tone="info" icon={Banknote}>
-                From ₱5 per page
-              </StatusPill>
-            </div>
-
-            {state.notice ? (
-              <Notice icon={Info}>{state.notice}</Notice>
-            ) : null}
           </div>
-        </motion.div>
-      </div>
+
+          <div className="w-full">
+            <p className="mb-2.5 text-sm font-bold uppercase tracking-wide text-black/60">Send files from</p>
+            <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-3">
+              {SEND_FROM_TILES.map(({ icon: Icon, tone, title, hint }) => (
+                <div key={title} className="kb-card-flat flex items-center gap-3 p-3 sm:flex-col sm:items-start sm:gap-2.5 sm:p-4">
+                  <span
+                    className={`${tone} flex size-12 shrink-0 items-center justify-center rounded-xl border-[3px] border-black shadow-[3px_3px_0_#000]`}
+                  >
+                    <Icon className="size-6" strokeWidth={2.5} aria-hidden />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block font-display text-base font-bold leading-tight sm:text-lg">{title}</span>
+                    <span className="block text-sm font-medium leading-snug text-black/60">{hint}</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5">
+            {printerOk ? (
+              <StatusPill tone="ok" icon={CheckCircle2}>
+                Ready to print now
+              </StatusPill>
+            ) : (
+              <StatusPill tone="error" icon={TriangleAlert}>
+                Printer needs attention
+              </StatusPill>
+            )}
+            <StatusPill tone="info" icon={Banknote}>
+              From ₱5 per page
+            </StatusPill>
+          </div>
+
+          {state.notice ? <Notice icon={Info}>{state.notice}</Notice> : null}
+        </div>
+      </motion.div>
 
       <KCard className="w-full">
         <h2 className="font-display text-xl font-bold sm:text-2xl">Today at this kiosk</h2>
         <ul className="mt-4 space-y-3">
+          {TODAY_ROWS.map(({ icon: Icon, tone, text }) => (
+            <li key={text} className="flex items-center gap-3">
+              <span
+                className={`${tone} flex size-11 shrink-0 items-center justify-center rounded-xl border-[3px] border-black shadow-[3px_3px_0_#000]`}
+              >
+                <Icon className="size-5" strokeWidth={2.5} aria-hidden />
+              </span>
+              <span className="text-[15px] font-semibold">{text}</span>
+            </li>
+          ))}
           <li className="flex items-center gap-3">
-            <span className="kb-cream flex size-11 shrink-0 items-center justify-center rounded-xl border-[3px] border-black">
-              <Banknote className="size-5" strokeWidth={2.5} aria-hidden />
+            <span
+              className={`flex size-11 shrink-0 items-center justify-center rounded-xl border-[3px] border-black shadow-[3px_3px_0_#000] ${
+                printerOk ? 'kb-lime' : 'kb-coral'
+              }`}
+            >
+              {printerOk ? (
+                <CheckCircle2 className="size-5" strokeWidth={2.5} aria-hidden />
+              ) : (
+                <TriangleAlert className="size-5" strokeWidth={2.5} aria-hidden />
+              )}
             </span>
-            <span className="text-[15px] font-semibold">
-              Cash and e-wallet accepted · exact amount appreciated
-            </span>
-          </li>
-          <li className="flex items-center gap-3">
-            <span className="kb-cream flex size-11 shrink-0 items-center justify-center rounded-xl border-[3px] border-black">
-              <Paperclip className="size-5" strokeWidth={2.5} aria-hidden />
-            </span>
-            <span className="text-[15px] font-semibold">A4, Letter and A3 · black & white or colored</span>
-          </li>
-          <li className="flex items-center gap-3">
-            <span className="kb-cream flex size-11 shrink-0 items-center justify-center rounded-xl border-[3px] border-black">
-              <ShieldCheck className="size-5" strokeWidth={2.5} aria-hidden />
-            </span>
-            <span className="text-[15px] font-semibold">Your file is deleted from the kiosk after printing</span>
-          </li>
-          <li className="flex items-center gap-3">
-            <span className="kb-cream flex size-11 shrink-0 items-center justify-center rounded-xl border-[3px] border-black">
-              <CheckCircle2 className="size-5" strokeWidth={2.5} aria-hidden />
-            </span>
-            <span className="text-[15px] font-semibold">
-              {state.printer.ready && state.printer.paper !== 'out'
-                ? state.printer.message
-                : state.printer.message}
-            </span>
+            <span className="text-[15px] font-semibold">{state.printer.message}</span>
           </li>
         </ul>
 

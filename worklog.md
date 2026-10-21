@@ -264,3 +264,19 @@ Work Log:
 
 Stage Summary:
 - One app, four surfaces: / (public website, 11 pages incl. 404), /kiosk (untouched kiosk + setup + maintenance), /login + /operator + /admin (role-guarded), /upload/[sessionId] (phone-first). All navigation links wired per spec. Data layer consistent across every surface; auth cookie session; upload handoff kiosk↔phone verified end-to-end in a real browser.
+
+---
+Task ID: 11
+Agent: lead (Z.ai Code)
+Task: Welcome screen — remove the round printer logo and enhance the hero design to fill the space
+
+Work Log:
+- Rewrote src/kiosk/screens/WelcomeScreen.tsx: removed KioskLogo from the hero (top bar / boot / setup marks untouched).
+- New typographic hero: brand eyebrow (3 color dots + "SMART PRINT · SELF-SERVICE PRINTING"), h1 upsized to text-4xl→6xl with the second line set inside a lime bordered sticker block (3px border, 5px offset shadow) as the new visual anchor.
+- CTAs Start printing (xl) + Visit Smart Print website now sit side by side (wrap on narrow widths).
+- "Send files from" upgraded from flat chips to three tiles (QR blue / Bluetooth lime / USB coral icon tiles with shadows) each with a one-line hint; single column on small screens, 3-up from sm.
+- "Today at this kiosk" card: per-row icon tiles now color-coded (lime/blue/coral/printer-status-aware lime|coral) with 3px offset shadows; cleaned the redundant printer-message ternary.
+- Verified in browser via full setup wizard run (fresh profile): welcome renders at 600/900/1280/1920 with no overflow and no scroll at 1920×1080; Start printing → Preferences, Back → Welcome, Recover → recovery screen, Visit website → /?from=kiosk with Back-to-kiosk bar; lint clean; zero console/page errors.
+
+Stage Summary:
+- Logo-free Welcome hero with stronger typographic identity; all flows and route linkages intact; Neo-Brutalist tokens unchanged.
