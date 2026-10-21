@@ -296,3 +296,19 @@ Work Log:
 
 Stage Summary:
 - Welcome is now a true single-screen kiosk hero at 1024×768 → 1920×1080, resilient to the runtime notice state; no layout or flow regressions.
+
+---
+Task ID: 13
+Agent: lead (Z.ai Code)
+Task: Proper hover style for the "Recover previous transaction" button on the kiosk Welcome screen
+
+Work Log:
+- Replaced the flat underline + hover:bg-klime link with a Neo-Brutalist ghost button: white pill, 3px black border, rounded-xl, 3px offset shadow at rest; hover lifts 2px, fills klime and grows the shadow to 5px; active presses down (3px translate, 1px shadow) matching kb-btn:active; min-height raised 56→64px for the kiosk touch-target rule; focus-visible outline kept.
+- Debugging detour that surfaced two real issues:
+  (1) agent-browser's headless env reports (hover: none) and no pointer, so Tailwind's @media (hover:hover) hover styles never fire there — verified the rules exist in the served CSS and demonstrated the hover visually by injecting the same styles unguarded (bg rgb(163,230,53) + 5px shadow applied on real hover; active press verified via mouse down: bg lime + shadow shrank to 1px).
+  (2) Found a real kiosk bug: the InactivityOverlay used AnimatePresence and its fixed inset-0 backdrop stayed mounted (pointer-events: auto) while a throttled exit animation ran — an invisible overlay swallowing all kiosk touches. Fixed by splitting the dialog into an inner component using usePresence() and style pointerEvents: isPresent ? 'auto' : 'none'.
+- Restarted the dev server mid-debug (suspected stale CSS — was a false alarm caused by truncating composed box-shadow strings at read time).
+- Post-fix verification: reload → 0 console/page errors, no ghost overlays, Welcome still fits one screen (scrollHeight ≤ clientHeight), button resting 3px border + 3px shadow, hover/active behaviors confirmed.
+
+Stage Summary:
+- Recover button now has a design-system-consistent hover/press treatment; kiosk-wide invisible-overlay touch-blocking bug fixed via usePresence pointer-events guard.

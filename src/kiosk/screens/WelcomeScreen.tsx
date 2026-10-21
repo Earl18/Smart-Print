@@ -188,7 +188,7 @@ export function WelcomeScreen() {
         <button
           type="button"
           onClick={() => dispatch({ type: 'OPEN_RECOVERY' })}
-          className="mt-4 inline-flex min-h-14 items-center gap-2 font-display text-base font-bold underline decoration-[3px] underline-offset-4 hover:bg-klime focus-visible:outline-[3px]"
+          className="mt-4 inline-flex min-h-16 items-center gap-2 self-start rounded-xl border-[3px] border-black bg-white px-4 font-display text-base font-bold shadow-[3px_3px_0_#000] transition-[background-color,transform,box-shadow] duration-100 ease-out hover:-translate-y-0.5 hover:bg-klime hover:shadow-[5px_5px_0_#000] active:translate-x-[3px] active:translate-y-[3px] active:bg-klime active:shadow-[1px_1px_0_#000] focus-visible:outline-[3px]"
         >
           <History className="size-5" strokeWidth={2.5} aria-hidden />
           Recover previous transaction
