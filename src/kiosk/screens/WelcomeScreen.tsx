@@ -92,10 +92,12 @@ export function WelcomeScreen() {
         </p>
 
         <div className="flex flex-col gap-3.5 sm:gap-4">
-          <div className="flex flex-col items-start gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
+          {/* Primary + secondary action share one row so both stay above the fold */}
+          <div className="flex flex-wrap items-center gap-2.5">
             <KButton
-              size="xl"
+              size="lg"
               icon={ArrowRight}
+              className="px-6!"
               onClick={() => {
                 requestFullscreenIfPossible()
                 dispatch({ type: 'START_ORDER' })
@@ -107,8 +109,9 @@ export function WelcomeScreen() {
             {state.online ? (
               <KButton
                 tone="white"
-                size="lg"
+                size="md"
                 icon={Globe}
+                className="px-5!"
                 onClick={() => {
                   window.location.href = '/?from=kiosk'
                 }}
@@ -119,7 +122,25 @@ export function WelcomeScreen() {
           </div>
 
           <div className="w-full">
-            <p className="mb-2 text-sm font-bold uppercase tracking-wide text-black/60">Send files from</p>
+            {/* Label + status pills share one line that sits right on the tiles'
+                top border, so the pills read as aligned with the USB drive */}
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+              <p className="text-sm font-bold uppercase tracking-wide text-black/60">Send files from</p>
+              <div className="flex flex-wrap items-center gap-2">
+                {printerOk ? (
+                  <StatusPill tone="ok" icon={CheckCircle2}>
+                    Ready to print now
+                  </StatusPill>
+                ) : (
+                  <StatusPill tone="error" icon={TriangleAlert}>
+                    Printer needs attention
+                  </StatusPill>
+                )}
+                <StatusPill tone="info" icon={Banknote}>
+                  From ₱5 per page
+                </StatusPill>
+              </div>
+            </div>
             <div className="grid w-full grid-cols-3 gap-2.5 max-[479px]:grid-cols-1 sm:gap-3">
               {SEND_FROM_TILES.map(({ icon: Icon, tone, title, hint }) => (
                 <div key={title} className="kb-card-flat flex items-center gap-2.5 p-2.5">
@@ -135,21 +156,6 @@ export function WelcomeScreen() {
                 </div>
               ))}
             </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            {printerOk ? (
-              <StatusPill tone="ok" icon={CheckCircle2}>
-                Ready to print now
-              </StatusPill>
-            ) : (
-              <StatusPill tone="error" icon={TriangleAlert}>
-                Printer needs attention
-              </StatusPill>
-            )}
-            <StatusPill tone="info" icon={Banknote}>
-              From ₱5 per page
-            </StatusPill>
           </div>
 
           {state.notice ? <Notice icon={Info}>{state.notice}</Notice> : null}

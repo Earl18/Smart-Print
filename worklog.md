@@ -312,3 +312,19 @@ Work Log:
 
 Stage Summary:
 - Recover button now has a design-system-consistent hover/press treatment; kiosk-wide invisible-overlay touch-blocking bug fixed via usePresence pointer-events guard.
+
+---
+Task ID: 14
+Agent: lead (Z.ai Code)
+Task: Welcome screen — put "Start printing" + "Visit Smart Print website" on one line, and move the "Ready to print now" / "From ₱5 per page" pills inline with the top border of the send-tiles row (above the USB drive tile)
+
+Work Log:
+- Diagnosed why the CTAs stacked despite sm:flex-row: "Start printing" (xl, ~340px) + "Visit…" (lg, ~360px) exceeded the ~575px left column at the user's ~1104px panel, so flex-wrap pushed the second button down.
+- Resized CTAs to share one row: Start printing xl→lg (with px-6! override) and Visit → md (px-5! override). Learned that Tailwind utilities do NOT override .kb-btn's unlayered padding (computed padding stayed 28px with plain px-6); the Tailwind v4 trailing-! important modifier (px-6!) is required.
+- Moved the two StatusPills out of their own row into the "Send files from" label row (flex flex-wrap justify-between, mb-2): label left, pills right — pills now sit directly on the tiles' top border line, right-aligned ending exactly at the USB drive tile's right edge; removed the old standalone pills row (~50px saved).
+- Browser-verified at 1104×756 (user panel), 1024×768, 1280×800, 1920×1080 and 800×1280: buttons share one line (identical y) and main scrollHeight − clientHeight = 0 everywhere; with the runtime notice visible also 0. Pills bottom sits 8px above tile top border.
+- Regression checks: Recover click still shows "Nothing to recover…" notice; Start printing → Preferences works; power-interrupted recovery screen still appears after reload of a recoverable session; Recover hover treatment from Task 13 intact (headless hover:none caveat again — confirmed rules exist in CSS chunk and visually via forced-style preview: klime fill + 5px lifted shadow).
+- bun run lint clean; no console/page errors (remaining 404s in dev.log are the unbuilt Phase D /upload + /api/upload routes, pre-existing).
+
+Stage Summary:
+- CTAs now occupy a single 64px row and the status pills ride the label line flush with the tiles' top border — welcome screen is tighter, still one-screen at all kiosk sizes, all flows verified.
