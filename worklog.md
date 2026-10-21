@@ -134,3 +134,22 @@ Work Log:
 Stage Summary:
 - All three features verified end-to-end in a real browser: fresh boot → 6-step setup (online via SmartPrint-HQ incl. wrong-password failure path, license invalid/expired/in_use/valid states, 6 OK device checks, settings v7 + PIN) → Welcome; reset via logo long-press → PIN (wrong-PIN errors, 5-attempt 60s lockout with ticking countdown + reload persistence) → maintenance → RESET → wizard restart with held SOURCE_SELECT session preserved and recoverable ("Power was interrupted" prompt → resume); website view shows unreachable card for placeholder URL, bundled site loads with Download hidden via kiosk=1, offline mode hides button; offline-mode setup (bundled v3) yields Offline pill + QR/e-wallet/website disabled.
 - Golden path re-verified after changes: intake → scan → review ₱15×2 → cash with excess → printing → SUCCESS; lint + tsc clean; responsive at 600px and 1920×1080 with no horizontal overflow.
+
+---
+Task ID: 7
+Agent: lead (Z.ai Code)
+Task: Replace all brand marks with the customer-supplied round printer logo, sitewide (kiosk UI + bundled website + desktop shell)
+
+Work Log:
+- Square-cropped the uploaded logo (upload/pasted_image_1792558623447.png, 226×223) with sharp → public/logo.png (canonical asset) and src/app/icon.png (App Router favicon); removed stale public/mascot.png and unused public/logo.svg after grep confirmed a single reference.
+- Added shared src/kiosk/components/Logo.tsx (KioskLogo) — one component so the mark renders identically everywhere; rendered as-is (artwork carries its own outline/shadow) with rounded-full crop.
+- WelcomeScreen: hero mascot tile (lime badge + border + rotation) replaced with the plain round logo (size-32 sm:size-44) to match the customer's approved main-page mock.
+- TopBar: lime printer-icon badge replaced with the logo image inside the 3-second long-press maintenance target (hold-fill overlay kept); SMART PRINT wordmark unchanged.
+- BootScreen + SetupWizardScreen step 1: printer-icon tiles replaced with the logo; MaintenanceOverlay/Success/Recovery semantic icons intentionally kept (state icons, not brand marks).
+- KioskBrowserScreen: small logo added to the restricted-browser toolbar.
+- Bundled website public/site/index.html: header 🖨️ emoji badge and hero now use /logo.png (round, slight sticker rotation in header, 112px hero mark, 88px under 860px).
+- Electron shell: BrowserWindow icon set to public/logo.png so the Windows taskbar/window matches the UI.
+
+Stage Summary:
+- The uploaded round printer logo is now the single brand mark across: welcome hero, top bar (long-press target), boot screen, first-time setup, in-kiosk browser toolbar, bundled website (header + hero), favicon, and desktop window icon.
+- Browser-verified: setup wizard → welcome (hero logo matches the approved mock), website view (bundled site header + hero logos, kiosk=1 banner, Back to kiosk), golden path re-run end-to-end (QR intake → scan → ₱15×2=₱30 review → cash ₱100 with ₱70 excess → printing → success → Done), 600px portrait with no horizontal overflow, zero console/page errors, lint + kiosk TS clean.

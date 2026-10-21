@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Check, ChevronRight, Globe, Printer, Wifi, WifiOff, Wrench } from 'lucide-react'
+import { Check, ChevronRight, Globe, Wifi, WifiOff, Wrench } from 'lucide-react'
 import { useKiosk } from '@/kiosk/KioskContext'
 import { formatClock } from '@/kiosk/lib/format'
 import type { Phase } from '@/kiosk/lib/types'
+import { KioskLogo } from '@/kiosk/components/Logo'
 import { StatusPill } from '@/kiosk/components/primitives'
 import { cn } from '@/lib/utils'
 
@@ -109,10 +110,10 @@ export function TopBar() {
       >
         <span
           aria-hidden
-          className="kb-lime relative size-10 rotate-[-2deg] items-center justify-center overflow-hidden rounded-xl border-[3px] border-black shadow-[3px_3px_0_#000] sm:size-12"
+          className="relative size-10 shrink-0 rotate-[-2deg] overflow-hidden rounded-full sm:size-12"
         >
-          <span className="absolute inset-x-0 bottom-0 bg-black/20" style={{ height: `${holdPct}%` }} />
-          <Printer className="relative size-5 sm:size-7" strokeWidth={2.5} />
+          <KioskLogo alt="" className="size-full" />
+          <span className="absolute inset-x-0 bottom-0 bg-black/25" style={{ height: `${holdPct}%` }} />
         </span>
         <h1 className="font-display text-lg font-bold leading-none tracking-tight sm:text-2xl">
           SMART

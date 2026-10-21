@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowLeft, Globe, Loader2, LockKeyhole, RefreshCcw, ShieldCheck, WifiOff } from 'lucide-react'
 import { useKiosk } from '@/kiosk/KioskContext'
+import { KioskLogo } from '@/kiosk/components/Logo'
 import { KButton, KCard, StatusPill } from '@/kiosk/components/primitives'
 import { DEFAULT_WEBSITE_URL, kioskConfigService } from '@/kiosk/services'
 import { cn } from '@/lib/utils'
@@ -92,6 +93,7 @@ export function KioskBrowserScreen() {
     <div className="mx-auto flex h-[calc(100dvh-11.5rem)] min-h-[440px] w-full max-w-[1280px] flex-col gap-4 px-4 py-5 sm:h-[calc(100dvh-13rem)] sm:px-8">
       {/* Browser toolbar — Back to kiosk is always visible */}
       <div className="kb-card-flat flex flex-wrap items-center gap-3 p-3 sm:p-4">
+        <KioskLogo alt="" className="hidden size-10 shrink-0 sm:block" />
         <KButton tone="lime" icon={ArrowLeft} onClick={() => dispatch({ type: 'WEBSITE_CLOSE' })}>
           Back to kiosk
         </KButton>

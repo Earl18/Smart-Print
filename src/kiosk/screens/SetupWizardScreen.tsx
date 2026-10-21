@@ -32,6 +32,7 @@ import {
   XCircle,
 } from 'lucide-react'
 import { useKiosk } from '@/kiosk/KioskContext'
+import { KioskLogo } from '@/kiosk/components/Logo'
 import {
   KButton,
   KCard,
@@ -314,12 +315,7 @@ function StepWelcome() {
         </p>
       </KCard>
       <div className="flex flex-col items-center justify-center gap-4">
-        <span
-          aria-hidden
-          className="kb-lime flex size-28 rotate-[-2deg] items-center justify-center rounded-2xl border-[3px] border-black shadow-[5px_5px_0_#000] sm:size-36"
-        >
-          <Printer className="size-14 sm:size-16" strokeWidth={2.5} />
-        </span>
+        <KioskLogo alt="" className="size-28 sm:size-36" />
         <StatusPill tone="info" icon={LockKeyhole}>
           Operator setup — customers cannot see this
         </StatusPill>

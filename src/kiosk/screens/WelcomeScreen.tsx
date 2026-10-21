@@ -16,6 +16,7 @@ import {
   Usb,
 } from 'lucide-react'
 import { useKiosk } from '@/kiosk/KioskContext'
+import { KioskLogo } from '@/kiosk/components/Logo'
 import { Chip, KButton, KCard, Notice, SectionHeading, StatusPill } from '@/kiosk/components/primitives'
 
 declare global {
@@ -48,13 +49,8 @@ export function WelcomeScreen() {
           transition={{ duration: 0.35 }}
           className="flex flex-col items-start gap-6"
         >
-          {/* Mascot sticker — decorative, slightly rotated */}
-          <div
-            aria-hidden
-            className="kb-lime size-36 rotate-[-2deg] overflow-hidden rounded-full border-[3px] border-black shadow-[6px_6px_0_#000] sm:size-48"
-          >
-            <img src="/mascot.png" alt="" className="size-full object-cover" />
-          </div>
+          {/* Brand mark — the same round printer logo used everywhere */}
+          <KioskLogo className="size-32 sm:size-44" />
 
           <SectionHeading sub="Send a file from your phone or USB drive, pick your options, pay, and collect your prints — no app needed.">
             Print anything.

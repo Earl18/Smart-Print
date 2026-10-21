@@ -15,6 +15,7 @@ function createWindow() {
     fullscreen: true,
     autoHideMenuBar: true,
     backgroundColor: '#FFFDF5',
+    icon: path.join(__dirname, '..', 'public', 'logo.png'), // same brand mark as the UI
     show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
