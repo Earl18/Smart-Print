@@ -1,6 +1,6 @@
 'use client'
 
-import { useSyncExternalStore } from 'react'
+import { useCallback, useSyncExternalStore } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { ArrowLeft, Loader2, LogOut, MonitorSmartphone, ShieldAlert } from 'lucide-react'
@@ -22,9 +22,10 @@ function useMounted(): boolean {
 }
 
 /**
- * Shared shell for /operator and /admin: auth gate (middleware already
- * redirects signed-out visitors), polite "No access" for the wrong role,
- * and a slim top bar with the website/kiosk links.
+ * Shared shell for /operator and /admin: auth gate (signed-out visitors get a
+ * polite "Sign-in required" card — done client-side so it also works in
+ * embedded previews where cookies are unavailable), "No access" for the wrong
+ * role, and a slim top bar with the website/kiosk links.
  */
 export default function DashboardsLayout({ children }: { children: React.ReactNode }) {
   const { user, loading, signOut } = useAuth()
@@ -36,6 +37,13 @@ export default function DashboardsLayout({ children }: { children: React.ReactNo
   const mounted = useMounted()
 
   const area = pathname.startsWith('/admin') ? 'admin' : 'operator'
+
+  // Sequence sign-out → navigation: replacing routes while the signed-out
+  // state re-render lands can silently abort the navigation.
+  const handleSignOut = useCallback(async () => {
+    await signOut()
+    router.replace('/login')
+  }, [signOut, router])
 
   if (loading || !mounted) {
     return (
@@ -116,10 +124,7 @@ export default function DashboardsLayout({ children }: { children: React.ReactNo
             <TopLink href="/kiosk" label="Open kiosk" primary />
             <button
               type="button"
-              onClick={() => {
-                void signOut()
-                router.replace('/login')
-              }}
+              onClick={() => void handleSignOut()}
               aria-label="Sign out"
               className="flex size-11 items-center justify-center rounded-xl border-[3px] border-black bg-white shadow-[3px_3px_0_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0_#000]"
             >

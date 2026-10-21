@@ -545,12 +545,12 @@ export function toPublicUser(u: User): PublicUser {
   return { id: u.id, name: u.name, email: u.email, role: u.role, kioskIds: u.kioskIds }
 }
 
+/** Matches on email + password only; the caller decides how to treat
+ * suspended accounts so they get the right error, not a generic 401. */
 export function findUserByCredentials(email: string, password: string): User | null {
   const needle = email.trim().toLowerCase()
   return (
-    users.find(
-      (u) => u.email.toLowerCase() === needle && u.password === password && u.status === 'active',
-    ) ?? null
+    users.find((u) => u.email.toLowerCase() === needle && u.password === password) ?? null
   )
 }
 

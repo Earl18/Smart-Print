@@ -41,16 +41,12 @@ function LoginForm() {
     setSubmitting(true)
     const res = await signIn(email, password)
     setSubmitting(false)
-    if (!res.ok) {
+    if (!res.ok || !res.user) {
       setError(res.error ?? 'Sign-in failed. Check your email and password.')
       return
     }
     // Redirect by account role (or the page that sent us here).
-    const { refresh } = { refresh: null }
-    void refresh
-    const session = await fetch('/api/auth/session', { cache: 'no-store' }).then((r) => r.json())
-    const role = session?.user?.role
-    router.replace(nextPath && nextPath.startsWith('/') ? nextPath : role === 'admin' ? '/admin' : '/operator')
+    router.replace(nextPath && nextPath.startsWith('/') ? nextPath : homeForRole(res.user.role))
   }
 
   return (

@@ -360,3 +360,24 @@ Work Log:
 
 Stage Summary:
 - Cash payment now fits every landscape kiosk viewport on a single screen across collecting / confirmed / expired / failed states; both payment screens (e-wallet + cash) now share the same one-screen two-column card pattern.
+
+---
+Task ID: 17
+Agent: lead (Z.ai Code)
+Task: Fix "doesn't sign in with test accounts" — login worked server-side but the user always landed back on /login
+
+Work Log:
+- Diagnosed from dev.log + curl: POST /api/auth/login returned 200 with a correct Set-Cookie, yet the browser bounced /operator → /login?next=/operator in a loop. Root cause: the Preview Panel embeds the app in a cross-site iframe, where browsers drop SameSite=Lax cookies (third-party context). The cookie never stuck → middleware bounced every /operator document navigation → login page's cached-user useEffect looped back to /operator.
+- Made auth cookie-independent (cookie stays primary, header fallback added):
+  - session.ts: getSessionUser() now reads the session id from the cookie OR the new x-session-token header.
+  - login route: response body now includes token (= session id) alongside the cookie.
+  - AuthProvider: stores sp.auth.token in localStorage (try/catch-safe for blocked storage), sends x-session-token on /api/auth/session refresh, signIn returns { ok, user }, cache helpers hardened.
+  - login page: redirect now uses signIn's returned user (dropped the dead refresh placeholder + extra session fetch).
+  - Removed src/middleware.ts — the (dashboards) layout already gates client-side ("Sign-in required" card + role check), and middleware can't see localStorage on document navigations.
+  - Fixed unreachable suspended-account branch: findUserByCredentials no longer filters status==='active', so suspended users get the proper 403 "This account is suspended" instead of a generic 401.
+  - Fixed intermittent sign-out race in (dashboards)/layout.tsx: handleSignOut awaits signOut() before router.replace('/login') — replacing routes while the setUser(null) re-render landed could silently abort the navigation (reproduced once in testing).
+- Verified with curl: login returns token; session resolves via header-only, cookie-only, and rejects suspended/wrong credentials.
+- Verified in agent-browser (fresh session): signed-out /operator shows "Please sign in" card; operator login → /operator dashboard; admin login → /admin; two consecutive sign-out cycles land on /login; wrong password → "Email or password is incorrect."; lia.santos (suspended) → "This account is suspended…"; operator on /admin → "No access" card; reload keeps session; COOKIES CLEARED + reload keeps session (exact iframe simulation) via the token header; zero console/page errors; bun run lint + tsc clean.
+
+Stage Summary:
+- Sign-in now works everywhere regardless of cookie policy: first-party (Open in New Tab) uses the cookie, embedded preview iframes fall back to the localStorage token + x-session-token header. Middleware gate replaced by the existing client-side dashboards gate; suspended-account messaging and sign-out navigation fixed.

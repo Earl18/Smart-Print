@@ -34,5 +34,7 @@ export async function POST(request: Request) {
   }
 
   await setSessionCookie(user.id)
-  return NextResponse.json({ ok: true, user: toPublicUser(user) })
+  // `token` mirrors the session cookie for browsers that drop cookies
+  // (embedded preview iframes) — the client sends it as x-session-token.
+  return NextResponse.json({ ok: true, user: toPublicUser(user), token: user.id })
 }
