@@ -5,7 +5,7 @@ The kiosk and phone use this site's `/api/upload` routes. Vercel runs those rout
 ## One-time Vercel setup
 
 1. Import this repository into a Vercel project, or open its existing Vercel project.
-2. In the project's **Storage** tab, create a **Blob** store and choose **Private** access. Connect it to the project. Vercel supplies `BLOB_READ_WRITE_TOKEN` (or the Blob OIDC settings) to the deployment.
+2. In the project's **Storage** tab, create a **Blob** store and choose **Private** access. Connect it to the project. Vercel supplies `BLOB_STORE_ID`; its short-lived OIDC token is available to the Blob SDK at runtime.
 3. In **Settings → Environment Variables**, add `CRON_SECRET` with a random value of at least 16 characters. The daily cleanup job uses it to remove abandoned QR sessions.
 4. Redeploy after connecting the store and adding the secret.
 

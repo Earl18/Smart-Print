@@ -15,7 +15,9 @@ export class UploadStoreUnavailable extends Error {
 }
 
 function useBlob(): boolean {
-  if (process.env.BLOB_READ_WRITE_TOKEN || (process.env.VERCEL_OIDC_TOKEN && process.env.BLOB_STORE_ID)) return true
+  // At runtime Vercel passes OIDC through the request context, not an env var.
+  // The Blob SDK reads that token itself when the connected store ID is present.
+  if (process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID) return true
   if (process.env.VERCEL) throw new UploadStoreUnavailable()
   return false
 }
