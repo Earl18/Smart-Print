@@ -49,14 +49,9 @@ export default function LocationsPage() {
       <section className="border-b-[3px] border-black bg-kpaper">
         <div className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
           <Badge tone="lime">Locations</Badge>
-          <div className="mt-4 flex flex-wrap items-end justify-between gap-4">
-            <h1 className="max-w-3xl font-display text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl">
-              Find a kiosk near you.
-            </h1>
-            <Badge tone="white" className="text-sm">
-              {filtered.length} of {locations.length} locations
-            </Badge>
-          </div>
+          <h1 className="mt-4 max-w-3xl font-display text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl">
+            Find a kiosk near you.
+          </h1>
           <p className="mt-5 max-w-2xl text-base font-medium text-black/70 sm:text-lg">
             Kiosks sit in transit stations, parks and city centers across Metro Manila, Cebu, Davao and
             Iloilo — with live status for each one.
@@ -87,7 +82,12 @@ export default function LocationsPage() {
 
       {/* Location cards */}
       <section className="border-b-[3px] border-black bg-white">
-        <div className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 sm:py-16">
+        <div className="mx-auto w-full max-w-7xl px-4 pb-12 pt-4 sm:px-6 sm:pb-16 sm:pt-5">
+          <div className="mb-5 flex justify-end" aria-live="polite">
+            <Badge tone="white" className="text-sm">
+              {filtered.length} of {locations.length} locations
+            </Badge>
+          </div>
           {filtered.length === 0 ? (
             <StickerCard tone="cream" className="mx-auto flex max-w-xl flex-col items-center gap-4 p-10 text-center">
               <span className="flex size-16 items-center justify-center rounded-full border-[3px] border-black bg-white">

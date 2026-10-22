@@ -54,4 +54,8 @@ export class InMemorySystemService implements SystemService {
   toggleLicense(): void {
     this.writeFlag(InMemorySystemService.LICENSE_KEY, !this.readFlag(InMemorySystemService.LICENSE_KEY))
   }
+
+  activateLicense(): void {
+    this.writeFlag(InMemorySystemService.LICENSE_KEY, false)
+  }
 }

@@ -6,6 +6,7 @@ export const CASH_TIMEOUT_SEC = 120
 export const WALLET_TIMEOUT_SEC = 180
 export const INTAKE_TIMEOUT_SEC = { qr: 180, bluetooth: 180, usb: 90 }
 export const IDLE_WARN_SEC = 30
+export const IDLE_EXPIRED_NOTICE = 'Session ended after inactivity. Nothing was charged.'
 
 export const RESUMABLE_PHASES: Phase[] = [
   'PREFERENCES',
@@ -21,7 +22,6 @@ export const RESUMABLE_PHASES: Phase[] = [
 
 const HOLDABLE_PHASES: Phase[] = RESUMABLE_PHASES
 const IDLEABLE_PHASES: Phase[] = [
-  'WELCOME',
   'PREFERENCES',
   'SOURCE_SELECT',
   'RECEIVING',
@@ -30,7 +30,6 @@ const IDLEABLE_PHASES: Phase[] = [
   'PAYMENT_METHOD',
   'PAY_CASH',
   'PAY_EWALLET',
-  'SUCCESS',
 ]
 
 let refCounter = 0
@@ -212,7 +211,7 @@ export function reducer(state: KioskState, event: KioskEvent): KioskState {
         ...baseState(state),
         phase: 'PREFERENCES',
         payment: { ...baseState(state).payment, orderRef: makeRef('SP') },
-        notice: state.notice,
+        notice: null,
       }
     case 'OPEN_RECOVERY':
       // Handled by the orchestration hook (reads storage) — the reducer no-ops.
@@ -231,9 +230,9 @@ export function reducer(state: KioskState, event: KioskEvent): KioskState {
       return { ...state, prefs, price: state.doc ? computePrice(prefs, state.doc) : null }
     }
     case 'PREFS_NEXT':
-      return { ...state, phase: 'SOURCE_SELECT' }
+      return { ...state, phase: state.doc && state.price ? 'REVIEW' : 'SOURCE_SELECT' }
     case 'PREFS_BACK':
-      return { ...state, phase: 'WELCOME' }
+      return { ...state, phase: state.doc && state.price ? 'REVIEW' : 'WELCOME' }
 
     /* ---------------- file intake ---------------- */
     case 'PICK_SOURCE': {
@@ -616,7 +615,7 @@ export function reducer(state: KioskState, event: KioskEvent): KioskState {
       if (state.idle.warning) {
         const remainSec = state.idle.remainSec - 1
         if (remainSec <= 0) {
-          return discardToWelcome({ ...next, idle: { warning: false, remainSec: IDLE_WARN_SEC } }, 'Session ended after inactivity. Nothing was charged.')
+          return discardToWelcome({ ...next, idle: { warning: false, remainSec: IDLE_WARN_SEC } }, IDLE_EXPIRED_NOTICE)
         }
         next = { ...next, idle: { ...next.idle, remainSec } }
       }
@@ -644,7 +643,7 @@ export function reducer(state: KioskState, event: KioskEvent): KioskState {
     case 'IDLE_DISMISS':
       return { ...state, idle: { warning: false, remainSec: IDLE_WARN_SEC } }
     case 'IDLE_EXPIRE':
-      return discardToWelcome({ ...state, idle: { warning: false, remainSec: IDLE_WARN_SEC } }, 'Session ended after inactivity. Nothing was charged.')
+      return discardToWelcome({ ...state, idle: { warning: false, remainSec: IDLE_WARN_SEC } }, IDLE_EXPIRED_NOTICE)
 
     /* ---------------- outage hold ---------------- */
     case 'OUTAGE_START':

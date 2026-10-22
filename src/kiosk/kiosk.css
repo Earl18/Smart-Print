@@ -209,6 +209,47 @@ button.kb-chip:disabled {
   border: 3px dashed #000;
 }
 
+/* Archive-inspired QR page, with a scannable code and compact kiosk sizing. */
+.qr-page { min-height: calc(100dvh - 5rem); }
+.qr-page-code {
+  display: block;
+  width: clamp(160px, calc(100dvh - 13rem), 360px);
+  height: clamp(160px, calc(100dvh - 13rem), 360px);
+  max-width: 100%;
+}
+.qr-page-cancel { align-self: stretch; width: 100%; }
+@media (min-width: 560px) and (max-height: 500px) {
+  .qr-page-content { gap: 6px; }
+  .qr-page-heading h2 { font-size: 21px; line-height: 1.1; }
+  .qr-page-heading p { margin-top: 2px; font-size: 12px; line-height: 1.15; }
+  .qr-page-right { gap: 6px; }
+  .qr-page-steps { padding: 8px; }
+  .qr-page-steps ol { display: flex; flex-direction: column; gap: 6px; }
+  .qr-page-steps ol li { margin-top: 0; }
+  .qr-page-steps ol li span:first-child { width: 28px; height: 28px; font-size: 12px; }
+  .qr-page-steps ol li span:last-child { font-size: 13px; line-height: 1.15; }
+  .qr-page-steps p { margin-top: 7px; padding: 4px 6px; font-size: 10px; }
+  .qr-page-status { padding: 6px; }
+  .qr-page-status p { font-size: 11px; }
+  .qr-page-status .kb-chip { font-size: 11px; }
+  .qr-page-status span.inline-flex { font-size: 10px; padding: 4px 6px; }
+  .qr-time-label { display: none; }
+  .qr-page-cancel { min-height: 40px; padding: 4px 14px; font-size: 14px; }
+}
+@media (min-width: 560px) and (max-height: 400px) {
+  .qr-page { padding-top: 0; padding-bottom: 0; }
+  .qr-page-content { gap: 3px; }
+  .qr-page-heading p { display: none; }
+  .qr-page-grid { gap: 6px; }
+  .qr-page-right { gap: 4px; }
+  .qr-page-steps { padding: 6px; }
+  .qr-page-steps ol { gap: 3px; }
+  .qr-page-steps p { margin-top: 4px; padding: 2px 4px; }
+  .qr-page-status { padding: 3px; }
+  .qr-page-status span.inline-flex { padding: 2px 4px; }
+  .qr-page-cancel { min-height: 36px; }
+}
+
 /* ---------- Kiosk behavior ---------- */
 @media (pointer: coarse) {
   .kiosk-root,

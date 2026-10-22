@@ -102,14 +102,14 @@ export function PrintingScreen() {
             Printing your job
           </SectionHeading>
 
-          <div className="flex flex-wrap items-center gap-2.5">
-            <span className="rounded-xl border-[3px] border-black bg-white px-3 py-1.5 font-mono text-sm font-bold">
+          <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.9fr)] gap-2.5">
+            <span className="flex min-w-0 items-center justify-center break-all rounded-xl border-[3px] border-black bg-white px-2 py-1.5 text-center font-mono text-xs font-bold sm:text-sm">
               Job {state.job.id}
             </span>
-            <span className="rounded-xl border-[3px] border-black bg-white px-3 py-1.5 font-mono text-sm font-bold">
+            <span className="flex min-w-0 items-center justify-center break-all rounded-xl border-[3px] border-black bg-white px-2 py-1.5 text-center font-mono text-xs font-bold sm:text-sm">
               Order {state.payment.orderRef}
             </span>
-            <StatusPill tone={sv.tone} icon={sv.icon}>
+            <StatusPill tone={sv.tone} icon={sv.icon} className="min-w-0 justify-center gap-1! px-1! text-xs! sm:gap-2! sm:px-3! sm:text-sm!">
               {sv.word}
             </StatusPill>
           </div>

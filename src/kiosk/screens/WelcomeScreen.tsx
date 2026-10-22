@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
   ArrowRight,
@@ -17,6 +18,7 @@ import {
 } from 'lucide-react'
 import { useKiosk } from '@/kiosk/KioskContext'
 import { KButton, KCard, Notice, StatusPill } from '@/kiosk/components/primitives'
+import { IDLE_EXPIRED_NOTICE } from '@/kiosk/lib/machine'
 
 declare global {
   interface Window {
@@ -57,8 +59,14 @@ export function WelcomeScreen() {
   const { state, dispatch } = useKiosk()
   const printerOk = state.printer.ready && state.printer.paper !== 'out'
 
+  useEffect(() => {
+    if (state.notice !== IDLE_EXPIRED_NOTICE) return
+    const timer = window.setTimeout(() => dispatch({ type: 'NOTICE', message: null }), 5000)
+    return () => window.clearTimeout(timer)
+  }, [state.notice, dispatch])
+
   return (
-    <div className="mx-auto grid w-full max-w-[1280px] items-center gap-6 px-4 py-5 sm:px-8 sm:py-6 lg:grid-cols-[1.15fr_0.85fr] lg:gap-10">
+    <div className="mx-auto grid min-h-[calc(100dvh-4rem)] w-full max-w-[1280px] content-center items-center gap-6 px-4 py-5 sm:min-h-[calc(100dvh-5rem)] sm:px-8 sm:py-6 lg:grid-cols-[1.15fr_0.85fr] lg:gap-10">
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
@@ -91,13 +99,14 @@ export function WelcomeScreen() {
           needed.
         </p>
 
-        <div className="flex flex-col gap-3.5 sm:gap-4">
-          {/* Primary + secondary action share one row so both stay above the fold */}
-          <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex w-full flex-col gap-3.5 sm:gap-4">
+          {/* Give the primary action more space while keeping both actions in one row on wide screens. */}
+          <div className={`grid w-full gap-2.5 ${state.online ? 'lg:grid-cols-[1.2fr_1fr]' : ''}`}>
             <KButton
               size="lg"
               icon={ArrowRight}
-              className="px-6!"
+              full
+              className="px-6! text-center"
               onClick={() => {
                 requestFullscreenIfPossible()
                 dispatch({ type: 'START_ORDER' })
@@ -111,7 +120,8 @@ export function WelcomeScreen() {
                 tone="white"
                 size="md"
                 icon={Globe}
-                className="px-5!"
+                full
+                className="px-5! text-center"
                 onClick={() => {
                   window.location.href = '/?from=kiosk'
                 }}
@@ -122,25 +132,7 @@ export function WelcomeScreen() {
           </div>
 
           <div className="w-full">
-            {/* Label + status pills share one line that sits right on the tiles'
-                top border, so the pills read as aligned with the USB drive */}
-            <div className="mb-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-              <p className="text-sm font-bold uppercase tracking-wide text-black/60">Send files from</p>
-              <div className="flex flex-wrap items-center gap-2">
-                {printerOk ? (
-                  <StatusPill tone="ok" icon={CheckCircle2}>
-                    Ready to print now
-                  </StatusPill>
-                ) : (
-                  <StatusPill tone="error" icon={TriangleAlert}>
-                    Printer needs attention
-                  </StatusPill>
-                )}
-                <StatusPill tone="info" icon={Banknote}>
-                  From ₱5 per page
-                </StatusPill>
-              </div>
-            </div>
+            <p className="mb-2 text-sm font-bold uppercase tracking-wide text-black/60">Send files from</p>
             <div className="grid w-full grid-cols-3 gap-2.5 max-[479px]:grid-cols-1 sm:gap-3">
               {SEND_FROM_TILES.map(({ icon: Icon, tone, title, hint }) => (
                 <div key={title} className="kb-card-flat flex items-center gap-2.5 p-2.5">
@@ -155,6 +147,20 @@ export function WelcomeScreen() {
                   </span>
                 </div>
               ))}
+            </div>
+            <div className="mt-2.5 grid grid-cols-1 gap-2 min-[480px]:grid-cols-2">
+              {printerOk ? (
+                <StatusPill tone="ok" icon={CheckCircle2} className="justify-center text-center">
+                  Ready to print now
+                </StatusPill>
+              ) : (
+                <StatusPill tone="error" icon={TriangleAlert} className="justify-center text-center">
+                  Printer needs attention
+                </StatusPill>
+              )}
+              <StatusPill tone="info" icon={Banknote} className="justify-center text-center">
+                From ₱5 per page
+              </StatusPill>
             </div>
           </div>
 
@@ -194,7 +200,7 @@ export function WelcomeScreen() {
         <button
           type="button"
           onClick={() => dispatch({ type: 'OPEN_RECOVERY' })}
-          className="mt-4 inline-flex min-h-16 items-center gap-2 self-start rounded-xl border-[3px] border-black bg-white px-4 font-display text-base font-bold shadow-[3px_3px_0_#000] transition-[background-color,transform,box-shadow] duration-100 ease-out hover:-translate-y-0.5 hover:bg-klime hover:shadow-[5px_5px_0_#000] active:translate-x-[3px] active:translate-y-[3px] active:bg-klime active:shadow-[1px_1px_0_#000] focus-visible:outline-[3px]"
+          className="mt-4 inline-flex min-h-16 w-full items-center justify-center gap-2 rounded-xl border-[3px] border-black bg-white px-4 text-center font-display text-base font-bold shadow-[3px_3px_0_#000] transition-[background-color,transform,box-shadow] duration-100 ease-out hover:-translate-y-0.5 hover:bg-klime hover:shadow-[5px_5px_0_#000] active:translate-x-[3px] active:translate-y-[3px] active:bg-klime active:shadow-[1px_1px_0_#000] focus-visible:outline-[3px]"
         >
           <History className="size-5" strokeWidth={2.5} aria-hidden />
           Recover previous transaction

@@ -37,7 +37,7 @@ export function PublicHeader() {
 
   return (
     <header className="sticky top-0 z-40 border-b-[3px] border-black bg-kpaper">
-      <div className="mx-auto flex h-16 w-full max-w-7xl items-center gap-3 px-4 sm:h-[72px] sm:px-6">
+      <div className="mx-auto flex h-16 w-full max-w-7xl items-center gap-3 px-4 sm:h-[72px] sm:px-6 xl:grid xl:grid-cols-[auto_minmax(0,1fr)_auto]">
         <Link href="/" className="flex shrink-0 items-center gap-2.5" aria-label="Smart Print home">
           <KioskLogo className="size-10 sm:size-11" alt="" />
           <span className="hidden font-display text-lg font-bold leading-none tracking-tight min-[420px]:inline sm:text-xl">
@@ -48,7 +48,7 @@ export function PublicHeader() {
           </span>
         </Link>
 
-        <nav aria-label="Site sections" className="ml-4 hidden items-center gap-0.5 xl:flex">
+        <nav aria-label="Site sections" className="hidden w-full items-center justify-center gap-0.5 xl:flex">
           {NAV.map((item) => {
             const active = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href)
             return (
@@ -67,8 +67,8 @@ export function PublicHeader() {
           })}
         </nav>
 
-        <div className="ml-auto flex items-center gap-2 sm:gap-3">
-          <NBDownloadLink className="hidden sm:inline-flex" />
+        <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
+          <NBDownloadLink className="hidden md:inline-flex" />
 
           {user ? (
             <div className="relative" ref={accountRef}>
@@ -199,7 +199,7 @@ function NBDownloadLink({ className, onNavigate }: { className?: string; onNavig
       href="/kiosk"
       onClick={onNavigate}
       className={cn(
-        'flex min-h-11 items-center gap-2 rounded-xl border-[3px] border-black bg-klime px-4 font-display text-sm font-bold shadow-[3px_3px_0_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0_#000]',
+        'flex min-h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-xl border-[3px] border-black bg-klime px-4 font-display text-sm font-bold shadow-[3px_3px_0_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0_#000]',
         className,
       )}
     >

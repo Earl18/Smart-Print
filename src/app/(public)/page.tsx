@@ -124,9 +124,9 @@ export default function HomePage() {
                   </li>
                 ))}
               </ul>
-              <div className="mt-5 flex flex-wrap gap-2">
-                <Badge tone="lime">Ready to print</Badge>
-                <Badge tone="white">From ₱5 per page</Badge>
+              <div className="mt-5 grid grid-cols-2 gap-2">
+                <Badge tone="lime" className="justify-center text-center">Ready to print</Badge>
+                <Badge tone="white" className="justify-center text-center">From ₱5 per page</Badge>
               </div>
             </StickerCard>
           </div>
@@ -176,23 +176,23 @@ export default function HomePage() {
               </li>
             ))}
           </ul>
-          <div className="mt-6 flex flex-wrap gap-2.5">
-            <Badge tone="lime">
+          <div className="mt-6 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
+            <Badge tone="lime" className="justify-center whitespace-nowrap">
               <QrCode className="size-3.5" aria-hidden /> QR upload
             </Badge>
-            <Badge tone="white">
+            <Badge tone="white" className="justify-center whitespace-nowrap">
               <Bluetooth className="size-3.5" aria-hidden /> Bluetooth
             </Badge>
-            <Badge tone="white">
+            <Badge tone="white" className="justify-center whitespace-nowrap">
               <Usb className="size-3.5" aria-hidden /> USB drive
             </Badge>
-            <Badge tone="blue">
+            <Badge tone="blue" className="justify-center whitespace-nowrap">
               <Banknote className="size-3.5" aria-hidden /> Cash accepted
             </Badge>
-            <Badge tone="blue">
+            <Badge tone="blue" className="justify-center whitespace-nowrap">
               <Smartphone className="size-3.5" aria-hidden /> E-wallet
             </Badge>
-            <Badge tone="coral">
+            <Badge tone="coral" className="justify-center whitespace-nowrap">
               <FileX2 className="size-3.5" aria-hidden /> Nothing stored
             </Badge>
           </div>

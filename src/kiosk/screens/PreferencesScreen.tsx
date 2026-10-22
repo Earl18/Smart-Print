@@ -13,6 +13,7 @@ import { COPIES_MAX, COPIES_MIN, PAPER_SIZES, perPageRate } from '@/kiosk/lib/pr
 export function PreferencesScreen() {
   const { state, dispatch } = useKiosk()
   const { paper, color, copies } = state.prefs
+  const editingOrder = Boolean(state.doc && state.price)
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-6 sm:px-8 sm:py-10">
@@ -109,7 +110,7 @@ export function PreferencesScreen() {
         {/* Footer */}
         <div className="flex flex-col gap-3 sm:flex-row">
           <KButton tone="white" className="w-full sm:w-auto" onClick={() => dispatch({ type: 'PREFS_BACK' })}>
-            Back
+            {editingOrder ? 'Back to review' : 'Back'}
           </KButton>
           <KButton
             tone="lime"
@@ -117,7 +118,7 @@ export function PreferencesScreen() {
             className="w-full flex-1 sm:w-auto"
             onClick={() => dispatch({ type: 'PREFS_NEXT' })}
           >
-            Continue
+            {editingOrder ? 'Save and review' : 'Continue'}
           </KButton>
         </div>
       </motion.div>

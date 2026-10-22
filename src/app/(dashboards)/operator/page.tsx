@@ -99,7 +99,13 @@ export default function OperatorPage() {
       {tab === 'sales' ? <SalesSection user={user} kiosks={kiosks} /> : null}
       {tab === 'incidents' ? <IncidentsSection user={user} kiosks={kiosks} bump={bump} /> : null}
       {tab === 'held' ? <HeldSection user={user} kiosks={kiosks} /> : null}
-      {tab === 'kiosks' ? <KiosksSection user={user} kiosks={kiosks} /> : null}
+      {tab === 'kiosks' ? (
+        <KiosksSection
+          kiosks={kiosks}
+          selectedKioskId={selectedKioskId}
+          onSelectKiosk={setSelectedKioskId}
+        />
+      ) : null}
       {tab === 'settings' ? (
         <SettingsSection
           key={selectedId ?? 'none'}

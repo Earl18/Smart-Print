@@ -1,5 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
+import Link from 'next/link'
 import { cn } from '@/lib/utils'
 
 /** Card in the shared Neo-Brutalist system. `rotate` gives decorative
@@ -99,5 +100,40 @@ export function Badge({
     >
       {children}
     </span>
+  )
+}
+
+/** Rounded secondary link shared by the sign-in and password reset pages. */
+export function PillLink({
+  href,
+  icon: Icon,
+  iconClassName,
+  className,
+  children,
+}: {
+  href: string
+  icon: LucideIcon
+  iconClassName?: string
+  className?: string
+  children: ReactNode
+}) {
+  return (
+    <Link
+      href={href}
+      className={cn(
+        'group mx-auto flex min-h-11 items-center gap-2 rounded-full border-[3px] border-black bg-white px-5 py-1.5',
+        'font-display text-sm font-bold shadow-[2px_2px_0_#000] transition-all duration-150',
+        'hover:-translate-y-0.5 hover:bg-klime hover:shadow-[4px_4px_0_#000]',
+        'active:translate-y-0 active:shadow-[1px_1px_0_#000]',
+        className,
+      )}
+    >
+      <Icon
+        className={cn('size-4 shrink-0 transition-transform duration-150', iconClassName)}
+        strokeWidth={2.5}
+        aria-hidden
+      />
+      {children}
+    </Link>
   )
 }

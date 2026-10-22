@@ -17,6 +17,7 @@ import type {
   PublishedSettings,
   SystemService,
 } from './types'
+import { kiosks, licenses } from '@/lib/data/db'
 
 /* ============================================================
    KioskConfigService — configuration, setup progress and the
@@ -26,6 +27,12 @@ import type {
 const CONFIG_KEY = 'smartprint.config.v1'
 const SETUP_KEY = 'smartprint.setup.v1'
 const MAINT_KEY = 'smartprint.maintenance.v1'
+
+function scopedKey(key: string, kioskId?: string): string {
+  if (typeof window === 'undefined') return key
+  const id = kioskId ?? new URLSearchParams(window.location.search).get('kioskId')
+  return id ? `${key}.${encodeURIComponent(id)}` : key
+}
 
 const PIN_MAX_ATTEMPTS = 5
 const PIN_LOCK_SECONDS = 60
@@ -81,35 +88,35 @@ function removeKey(key: string): void {
 
 export class LocalKioskConfigService implements KioskConfigService {
   load(): KioskConfig | null {
-    const cfg = readJson<KioskConfig>(CONFIG_KEY)
+    const cfg = readJson<KioskConfig>(scopedKey(CONFIG_KEY))
     if (!cfg || typeof cfg !== 'object' || !cfg.license) return null
     return cfg
   }
 
   save(config: KioskConfig): void {
-    writeJson(CONFIG_KEY, config)
+    writeJson(scopedKey(CONFIG_KEY), config)
   }
 
-  resetKiosk(): void {
-    removeKey(CONFIG_KEY)
-    removeKey(SETUP_KEY)
-    removeKey(MAINT_KEY)
+  resetKiosk(kioskId?: string): void {
+    removeKey(scopedKey(CONFIG_KEY, kioskId))
+    removeKey(scopedKey(SETUP_KEY, kioskId))
+    removeKey(scopedKey(MAINT_KEY, kioskId))
   }
 
   loadSetupProgress(): SetupProgress | null {
-    return readJson<SetupProgress>(SETUP_KEY)
+    return readJson<SetupProgress>(scopedKey(SETUP_KEY))
   }
 
   saveSetupProgress(progress: SetupProgress): void {
-    writeJson(SETUP_KEY, progress)
+    writeJson(scopedKey(SETUP_KEY), progress)
   }
 
   clearSetupProgress(): void {
-    removeKey(SETUP_KEY)
+    removeKey(scopedKey(SETUP_KEY))
   }
 
   verifyOperatorPin(pin: string): { ok: boolean; lockedFor: number } {
-    const record = readJson<MaintRecord>(MAINT_KEY) ?? { attempts: 0, lockedUntil: 0 }
+    const record = readJson<MaintRecord>(scopedKey(MAINT_KEY)) ?? { attempts: 0, lockedUntil: 0 }
     const now = Date.now()
     if (record.lockedUntil > now) {
       return { ok: false, lockedFor: Math.ceil((record.lockedUntil - now) / 1000) }
@@ -117,21 +124,21 @@ export class LocalKioskConfigService implements KioskConfigService {
     const cfg = this.load()
     const expected = cfg?.operatorPin ?? '000000'
     if (pin === expected) {
-      removeKey(MAINT_KEY)
+      removeKey(scopedKey(MAINT_KEY))
       return { ok: true, lockedFor: 0 }
     }
     const attempts = record.attempts + 1
     if (attempts >= PIN_MAX_ATTEMPTS) {
       const lockedUntil = now + PIN_LOCK_SECONDS * 1000
-      writeJson(MAINT_KEY, { attempts: 0, lockedUntil })
+      writeJson(scopedKey(MAINT_KEY), { attempts: 0, lockedUntil })
       return { ok: false, lockedFor: PIN_LOCK_SECONDS }
     }
-    writeJson(MAINT_KEY, { attempts, lockedUntil: 0 })
+    writeJson(scopedKey(MAINT_KEY), { attempts, lockedUntil: 0 })
     return { ok: false, lockedFor: 0 }
   }
 
   pinLockRemaining(): number {
-    const record = readJson<MaintRecord>(MAINT_KEY)
+    const record = readJson<MaintRecord>(scopedKey(MAINT_KEY))
     if (!record || record.lockedUntil <= Date.now()) return 0
     return Math.ceil((record.lockedUntil - Date.now()) / 1000)
   }
@@ -205,6 +212,14 @@ export class InMemoryNetworkSetupService implements NetworkSetupService {
     await delay(1400)
     const normalized = key.trim().toUpperCase()
     if (!licenseKeyShape(normalized)) return { status: 'invalid' }
+    const selectedId = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('kioskId')
+    if (selectedId) {
+      const kiosk = kiosks.find((item) => item.id === selectedId)
+      const license = licenses.find((item) => item.key === normalized && item.kioskId === selectedId)
+      if (!kiosk || !license) return { status: 'invalid' }
+      if (license.status === 'expired') return { status: 'expired' }
+      return { status: 'valid', operatorName: license.issuedTo, kioskName: kiosk.name }
+    }
     if (normalized === VALID_LICENSE_KEY) {
       return { status: 'valid', operatorName: 'BrightCopy Internet Café', kioskName: 'Smart Print SM-101' }
     }

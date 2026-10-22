@@ -5,6 +5,7 @@
    helper that points at the kiosk setup wizard. */
 
 import type { LucideIcon } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import {
   CheckCircle2,
   ClipboardList,
@@ -15,11 +16,12 @@ import {
   Wrench,
 } from 'lucide-react'
 import { licenses } from '@/lib/data/db'
-import type { KioskRecord, LicenseRecord, PublicUser } from '@/lib/data/types'
+import type { KioskRecord, LicenseRecord } from '@/lib/data/types'
 import { DataTable, type DataColumn } from '@/components/site/DataTable'
 import { NBButton } from '@/components/site/NBButton'
 import { Badge, StickerCard } from '@/components/site/primitives'
 import { ModeTag, SectionTitle, relTime, shortDate } from './parts'
+import { kioskConfigService } from '@/kiosk/services'
 
 const SETUP_STEPS: Array<{ icon: LucideIcon; label: string }> = [
   { icon: ClipboardList, label: 'Welcome checklist' },
@@ -42,7 +44,26 @@ function licenseMeta(license: LicenseRecord | null): { tone: 'lime' | 'coral'; w
   return { tone: expiring ? 'coral' : 'lime', word: expiring ? 'Expiring' : 'Active', days }
 }
 
-export default function KiosksSection({ user, kiosks }: { user: PublicUser; kiosks: KioskRecord[] }) {
+export default function KiosksSection({
+  kiosks,
+  selectedKioskId,
+  onSelectKiosk,
+}: {
+  kiosks: KioskRecord[]
+  selectedKioskId: string | null
+  onSelectKiosk: (id: string) => void
+}) {
+  const router = useRouter()
+  const selected = kiosks.length === 1
+    ? kiosks[0]
+    : kiosks.find((k) => k.id === selectedKioskId)
+
+  const startSetup = () => {
+    if (!selected) return
+    kioskConfigService.resetKiosk(selected.id)
+    router.push(`/kiosk?kioskId=${encodeURIComponent(selected.id)}`)
+  }
+
   const columns: Array<DataColumn<KioskRecord>> = [
     {
       key: 'kiosk',
@@ -88,6 +109,8 @@ export default function KiosksSection({ user, kiosks }: { user: PublicUser; kios
         cardTitle={(k) => k.name}
         cardSub={(k) => `synced ${relTime(k.lastSyncAt)}`}
         empty="No kiosks are assigned to your account yet."
+        onRowClick={(k) => onSelectKiosk(k.id)}
+        selectedRowKey={selected?.id}
       />
 
       <StickerCard tone="lime" className="p-5 sm:p-6">
@@ -109,13 +132,17 @@ export default function KiosksSection({ user, kiosks }: { user: PublicUser; kios
             </li>
           ))}
         </ol>
+        <p className="mt-4 text-sm font-bold" aria-live="polite">
+          {selected ? `Selected kiosk: ${selected.name}` : 'Select a kiosk from the list above to run setup.'}
+        </p>
         <NBButton
-          href="/kiosk"
+          onClick={startSetup}
+          disabled={!selected}
           tone="white"
-          className="mt-4 w-full sm:w-auto"
+          className="mt-3 w-full"
           icon={<MonitorSmartphone className="size-5" strokeWidth={2.5} aria-hidden />}
         >
-          Open the kiosk to run first-time setup
+          Reset and run first-time setup{selected ? ` for ${selected.name}` : ''}
         </NBButton>
       </StickerCard>
     </section>

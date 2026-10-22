@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, CheckCircle2, Loader2, Mail, TriangleAlert } from 'lucide-react'
-import { StickerCard, StatusPill } from '@/components/site/primitives'
+import { StickerCard, StatusPill, PillLink } from '@/components/site/primitives'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
@@ -92,13 +92,9 @@ export default function ForgotPasswordPage() {
                 'Send reset link'
               )}
             </button>
-            <Link
-              href="/login"
-              className="mx-auto flex min-h-11 items-center gap-2 font-display text-sm font-bold underline decoration-[3px] underline-offset-4 hover:bg-klime"
-            >
-              <ArrowLeft className="size-4" strokeWidth={2.5} aria-hidden />
+            <PillLink href="/login" icon={ArrowLeft} iconClassName="group-hover:-translate-x-1">
               Back to sign in
-            </Link>
+            </PillLink>
           </form>
         </>
       )}

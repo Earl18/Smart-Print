@@ -8,6 +8,7 @@ import {
   Fuel,
   LaptopMinimal,
   Power,
+  RefreshCcw,
   RotateCcw,
   Wrench,
   X,
@@ -46,9 +47,18 @@ export function DevPanel() {
     setTimeout(() => window.location.reload(), 200)
   }
 
+  const handleLicenseClick = () => {
+    if (state.phase === 'FIRST_RUN_SETUP') {
+      window.dispatchEvent(new CustomEvent('smartprint:fill-license', { detail: VALID_LICENSE_KEY }))
+      return
+    }
+    systemService.toggleLicense()
+  }
+
   /* Store a complete configuration so the customer flow can be reached
      without walking the whole wizard. */
   const applyDefaultConfig = () => {
+    if (state.phase !== 'FIRST_RUN_SETUP') return
     kioskConfigService.save({
       mode: 'online',
       wifiSsid: 'SmartPrint-HQ',
@@ -59,6 +69,7 @@ export function DevPanel() {
       websiteUrl: DEFAULT_WEBSITE_URL,
       completedAt: Date.now(),
     })
+    systemService.activateLicense()
     dispatch({ type: 'SETUP_COMPLETE' })
   }
 
@@ -124,11 +135,11 @@ export function DevPanel() {
         <button type="button" className="kb-mini" onClick={() => systemService.toggleOffline()}>
           <LaptopMinimal className="size-3.5" aria-hidden /> Net {state.online ? 'off' : 'on'}
         </button>
-        <button type="button" className="kb-mini" onClick={() => systemService.toggleLicense()}>
+        <button type="button" className="kb-mini" onClick={handleLicenseClick}>
           License
         </button>
-        <button type="button" className="kb-mini" onClick={() => dispatch({ type: 'RESET' })}>
-          <RotateCcw className="size-3.5" aria-hidden /> Reset
+        <button type="button" className="kb-mini" onClick={() => window.location.reload()}>
+          <RefreshCcw className="size-3.5" aria-hidden /> Refresh
         </button>
       </PanelGroup>
 
@@ -136,14 +147,7 @@ export function DevPanel() {
         <button type="button" className="kb-mini" onClick={() => dispatch({ type: 'MAINTENANCE_OPEN' })}>
           <Wrench className="size-3.5" aria-hidden /> Maintenance
         </button>
-        <button
-          type="button"
-          className="kb-mini"
-          onClick={() => window.dispatchEvent(new CustomEvent('smartprint:fill-license', { detail: VALID_LICENSE_KEY }))}
-        >
-          Fill key
-        </button>
-        <button type="button" className="kb-mini" onClick={applyDefaultConfig}>
+        <button type="button" className="kb-mini" disabled={state.phase !== 'FIRST_RUN_SETUP'} onClick={applyDefaultConfig}>
           Default config
         </button>
         <button type="button" className="kb-mini" onClick={() => kioskConfigService.setWebsiteUrl('/site/index.html')}>

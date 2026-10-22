@@ -59,14 +59,17 @@ export function ReviewScreen() {
             </KCard>
 
             {/* Actions */}
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              <KButton tone="lime" icon={CreditCard} onClick={() => dispatch({ type: 'REVIEW_NEXT' })}>
-                Continue to payment
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-[1.5fr_1.3fr_0.8fr] sm:gap-3">
+              <KButton tone="lime" className="min-w-0 gap-1! px-1! text-xs! sm:gap-2! sm:px-2! sm:text-sm!" onClick={() => dispatch({ type: 'REVIEW_NEXT' })}>
+                <CreditCard className="hidden size-5 shrink-0 sm:block" strokeWidth={2.5} aria-hidden />
+                <span className="sm:hidden">Continue</span><span className="hidden sm:inline">Continue to payment</span>
               </KButton>
-              <KButton tone="white" icon={Pencil} onClick={() => dispatch({ type: 'EDIT_PREFS' })}>
-                Edit preferences
+              <KButton tone="white" className="min-w-0 gap-1! px-1! text-xs! sm:gap-2! sm:px-2! sm:text-sm!" onClick={() => dispatch({ type: 'EDIT_PREFS' })}>
+                <Pencil className="hidden size-5 shrink-0 sm:block" strokeWidth={2.5} aria-hidden />
+                <span className="sm:hidden">Edit</span><span className="hidden sm:inline">Edit preferences</span>
               </KButton>
-              <KButton tone="coral" icon={X} title="Discards the order" onClick={() => dispatch({ type: 'REVIEW_CANCEL' })}>
+              <KButton tone="coral" className="min-w-0 gap-1! px-1! text-xs! sm:gap-2! sm:px-2! sm:text-sm!" title="Discards the order" onClick={() => dispatch({ type: 'REVIEW_CANCEL' })}>
+                <X className="hidden size-5 shrink-0 sm:block" strokeWidth={2.5} aria-hidden />
                 Cancel
               </KButton>
             </div>

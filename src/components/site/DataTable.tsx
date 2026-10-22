@@ -26,6 +26,7 @@ export function DataTable<T>({
   cardSub,
   empty = 'Nothing here yet.',
   onRowClick,
+  selectedRowKey,
 }: {
   columns: Array<DataColumn<T>>
   rows: T[]
@@ -34,6 +35,7 @@ export function DataTable<T>({
   cardSub?: (row: T) => ReactNode
   empty?: string
   onRowClick?: (row: T) => void
+  selectedRowKey?: string | null
 }) {
   if (rows.length === 0) {
     return (
@@ -62,9 +64,19 @@ export function DataTable<T>({
               <tr
                 key={rowKey(row)}
                 onClick={onRowClick ? () => onRowClick(row) : undefined}
+                onKeyDown={onRowClick ? (event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    onRowClick(row)
+                  }
+                } : undefined}
+                role={onRowClick ? 'button' : undefined}
+                tabIndex={onRowClick ? 0 : undefined}
+                aria-pressed={onRowClick ? selectedRowKey === rowKey(row) : undefined}
                 className={cn(
                   'border-b-2 border-black/15 last:border-b-0',
-                  onRowClick && 'cursor-pointer hover:bg-klime/30',
+                  onRowClick && 'cursor-pointer hover:bg-klime/30 focus-visible:outline-4 focus-visible:outline-offset-[-4px] focus-visible:outline-black',
+                  selectedRowKey === rowKey(row) && 'bg-klime! font-bold',
                 )}
               >
                 {columns.map((c) => (
@@ -85,9 +97,11 @@ export function DataTable<T>({
             <button
               type="button"
               onClick={onRowClick ? () => onRowClick(row) : undefined}
+              aria-pressed={onRowClick ? selectedRowKey === rowKey(row) : undefined}
               className={cn(
                 'w-full rounded-2xl border-[3px] border-black bg-white p-4 text-left shadow-[4px_4px_0_#000]',
                 onRowClick && 'active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0_#000]',
+                selectedRowKey === rowKey(row) && 'bg-klime',
               )}
             >
               <div className="flex items-start justify-between gap-2">

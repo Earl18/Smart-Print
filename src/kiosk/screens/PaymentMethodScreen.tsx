@@ -61,7 +61,7 @@ export function PaymentMethodScreen() {
             </div>
 
             <div>
-              <KButton tone="white" icon={ArrowLeft} onClick={() => dispatch({ type: 'PAYMENT_BACK' })}>
+              <KButton tone="white" icon={ArrowLeft} full onClick={() => dispatch({ type: 'PAYMENT_BACK' })}>
                 Back to review
               </KButton>
             </div>

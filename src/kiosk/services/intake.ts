@@ -85,10 +85,13 @@ export class InMemoryFileIntakeService implements FileIntakeService {
       status: 'waiting',
       message: source === 'qr' ? 'Waiting for your upload…' : 'Waiting for your Bluetooth transfer…',
     })
-    this.after(2800, () => {
-      if (this.source !== source) return
-      this.runTransfer({ ...DEFAULT_DOCS[source] })
-    })
+    // QR waits for the phone upload API; only Bluetooth uses the demo transfer.
+    if (source === 'bluetooth') {
+      this.after(2800, () => {
+        if (this.source !== source) return
+        this.runTransfer({ ...DEFAULT_DOCS[source] })
+      })
+    }
   }
 
   cancel(): void {

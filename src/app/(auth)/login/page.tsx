@@ -1,11 +1,49 @@
 'use client'
 
 import { Suspense, useEffect, useState } from 'react'
-import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Eye, EyeOff, Loader2, LockKeyhole, Mail, TriangleAlert } from 'lucide-react'
+import {
+  CheckCircle2,
+  Circle,
+  KeyRound,
+  Loader2,
+  ShieldCheck,
+  TriangleAlert,
+  UserRound,
+  type LucideIcon,
+} from 'lucide-react'
 import { homeForRole, useAuth } from '@/lib/auth/AuthProvider'
-import { StickerCard, StatusPill } from '@/components/site/primitives'
+import { PillLink, StickerCard, StatusPill } from '@/components/site/primitives'
+import { cn } from '@/lib/utils'
+
+/** Demo accounts. Picking a card signs you straight into that dashboard —
+    no email or password typing required. The credentials below match the
+    seeded accounts so the server session (and every dashboard API) works. */
+const ACCOUNTS: {
+  key: 'operator' | 'admin'
+  label: string
+  blurb: string
+  email: string
+  password: string
+  icon: LucideIcon
+}[] = [
+  {
+    key: 'operator',
+    label: 'Operator',
+    blurb: 'Run the floor — unlock kiosks and help customers print.',
+    email: 'operator@smartprint.example',
+    password: 'print2025',
+    icon: UserRound,
+  },
+  {
+    key: 'admin',
+    label: 'Administrator',
+    blurb: 'Full control — kiosks, licenses, pricing and users.',
+    email: 'admin@smartprint.example',
+    password: 'print2025',
+    icon: ShieldCheck,
+  },
+]
 
 function LoginForm() {
   const { signIn, user, loading } = useAuth()
@@ -13,9 +51,7 @@ function LoginForm() {
   const params = useSearchParams()
   const nextPath = params.get('next')
 
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
+  const [selected, setSelected] = useState<'operator' | 'admin'>('operator')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -26,23 +62,17 @@ function LoginForm() {
     }
   }, [loading, user, router, nextPath])
 
+  const account = ACCOUNTS.find((a) => a.key === selected) ?? ACCOUNTS[0]
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (submitting) return
     setError(null)
-    if (!/^\S+@\S+\.\S+$/.test(email)) {
-      setError('Enter a valid email address.')
-      return
-    }
-    if (!password) {
-      setError('Enter your password.')
-      return
-    }
     setSubmitting(true)
-    const res = await signIn(email, password)
+    const res = await signIn(account.email, account.password)
     setSubmitting(false)
     if (!res.ok || !res.user) {
-      setError(res.error ?? 'Sign-in failed. Check your email and password.')
+      setError(res.error ?? 'Sign-in failed. Please try again.')
       return
     }
     // Redirect by account role (or the page that sent us here).
@@ -53,7 +83,7 @@ function LoginForm() {
     <StickerCard className="w-full max-w-md p-6 sm:p-8" as="section">
       <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">Sign in</h1>
       <p className="mt-1.5 text-sm font-semibold text-black/60">
-        For kiosk operators and Smart Print administrators.
+        Choose an account type and jump straight in.
       </p>
 
       {error ? (
@@ -65,77 +95,65 @@ function LoginForm() {
       ) : null}
 
       <form onSubmit={submit} className="mt-6 flex flex-col gap-4" noValidate>
-        <div>
-          <label htmlFor="login-email" className="mb-1.5 block font-display text-sm font-bold">
-            Email
-          </label>
-          <div className="relative">
-            <Mail className="pointer-events-none absolute left-3.5 top-1/2 size-5 -translate-y-1/2 text-black/45" strokeWidth={2.5} aria-hidden />
-            <input
-              id="login-email"
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@smartprint.example"
-              className="kb-input min-h-14 pl-11! font-semibold"
-            />
-          </div>
+        <div role="radiogroup" aria-label="Account type" className="flex flex-col gap-3">
+          {ACCOUNTS.map((acc) => {
+            const active = selected === acc.key
+            const Icon = acc.icon
+            return (
+              <button
+                key={acc.key}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                onClick={() => setSelected(acc.key)}
+                className={cn(
+                  'flex items-center gap-3.5 rounded-2xl border-[3px] border-black p-4 text-left transition-all duration-150',
+                  active
+                    ? 'kb-lime shadow-[4px_4px_0_#000]'
+                    : 'bg-white shadow-[2px_2px_0_#000] hover:-translate-y-0.5 hover:bg-kpaper hover:shadow-[4px_4px_0_#000]',
+                )}
+              >
+                <span
+                  className={cn(
+                    'flex size-11 shrink-0 items-center justify-center rounded-xl border-[3px] border-black',
+                    active ? 'bg-white' : 'bg-kpaper',
+                  )}
+                >
+                  <Icon className="size-6" strokeWidth={2.5} aria-hidden />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block font-display text-base font-bold">{acc.label}</span>
+                  <span className="block text-sm font-semibold text-black/60">{acc.blurb}</span>
+                </span>
+                {active ? (
+                  <CheckCircle2 className="size-6 shrink-0" strokeWidth={2.5} aria-hidden />
+                ) : (
+                  <Circle className="size-6 shrink-0 text-black/30" strokeWidth={2.5} aria-hidden />
+                )}
+              </button>
+            )
+          })}
         </div>
 
-        <div>
-          <label htmlFor="login-password" className="mb-1.5 block font-display text-sm font-bold">
-            Password
-          </label>
-          <div className="relative">
-            <LockKeyhole className="pointer-events-none absolute left-3.5 top-1/2 size-5 -translate-y-1/2 text-black/45" strokeWidth={2.5} aria-hidden />
-            <input
-              id="login-password"
-              type={showPassword ? 'text' : 'password'}
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Your password"
-              className="kb-input min-h-14 pl-11! pr-14! font-semibold"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword((v) => !v)}
-              aria-label={showPassword ? 'Hide password' : 'Show password'}
-              className="absolute right-2 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-lg hover:bg-kpaper"
-            >
-              {showPassword ? (
-                <EyeOff className="size-5" strokeWidth={2.5} aria-hidden />
-              ) : (
-                <Eye className="size-5" strokeWidth={2.5} aria-hidden />
-              )}
-            </button>
-          </div>
-        </div>
-
-        <button
-          type="submit"
-          disabled={submitting}
-          className="kb-btn kb-btn-lime mt-1 w-full"
-        >
+        <button type="submit" disabled={submitting} className="kb-btn kb-btn-lime mt-1 w-full">
           {submitting ? (
             <>
               <Loader2 className="size-5 animate-spin" strokeWidth={2.5} aria-hidden />
               Signing in…
             </>
           ) : (
-            'Sign in'
+            `Sign in as ${account.label}`
           )}
         </button>
 
-        <div className="text-center">
-          <Link
-            href="/forgot-password"
-            className="font-display text-sm font-bold underline decoration-[3px] underline-offset-4 hover:bg-klime"
-          >
-            Forgot your password?
-          </Link>
-        </div>
+        <PillLink
+          href="/forgot-password"
+          icon={KeyRound}
+          iconClassName="group-hover:-rotate-12"
+          className="self-center"
+        >
+          Forgot your password?
+        </PillLink>
       </form>
     </StickerCard>
   )

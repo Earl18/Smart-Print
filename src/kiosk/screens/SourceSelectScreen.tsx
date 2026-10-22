@@ -1,7 +1,6 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { useRouter } from 'next/navigation'
 import { Bluetooth, QrCode, Smartphone, Usb, WifiOff, type LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useKiosk } from '@/kiosk/KioskContext'
@@ -20,7 +19,7 @@ interface SourceOption {
 }
 
 const SOURCES: SourceOption[] = [
-  { source: 'qr', title: 'QR code', blurb: 'Scan & upload from your phone', icon: QrCode, tileTone: 'kb-lime' },
+  { source: 'qr', title: 'QR code', blurb: 'Scan & send a demo file', icon: QrCode, tileTone: 'kb-lime' },
   {
     source: 'bluetooth',
     title: 'Bluetooth',
@@ -33,17 +32,6 @@ const SOURCES: SourceOption[] = [
 
 export function SourceSelectScreen() {
   const { state, dispatch } = useKiosk()
-  const router = useRouter()
-
-  /* Tapping the QR card opens the phone upload page for this transaction —
-     the same page a phone opens after scanning the code. The kiosk keeps
-     its session, and the file lands in the document scan step on return. */
-  const openUploadPage = () => {
-    dispatch({ type: 'PICK_SOURCE', source: 'qr' })
-    const sessionId = state.payment.orderRef || 'SP-TEMP'
-    router.push(`/upload/${encodeURIComponent(sessionId)}?from=kiosk`)
-  }
-
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-8 sm:py-10">
       <motion.div
@@ -62,13 +50,7 @@ export function SourceSelectScreen() {
                 key={source}
                 type="button"
                 disabled={needsInternet}
-                onClick={() => {
-                  if (source === 'qr') {
-                    openUploadPage()
-                    return
-                  }
-                  dispatch({ type: 'PICK_SOURCE', source })
-                }}
+                onClick={() => dispatch({ type: 'PICK_SOURCE', source })}
                 className="kb-chip w-full flex-col items-start! justify-start! gap-3! min-h-[190px]! p-5! rounded-2xl!"
               >
                 <span
@@ -84,7 +66,7 @@ export function SourceSelectScreen() {
                 {source === 'qr' && !needsInternet ? (
                   <span className="mt-auto flex items-center gap-2 pt-2 text-sm font-bold text-black/70">
                     <Smartphone className="size-4" strokeWidth={2.5} aria-hidden />
-                    Tap to open the upload page
+                    Scan the code on the next screen
                   </span>
                 ) : null}
                 {needsInternet ? (
@@ -103,7 +85,7 @@ export function SourceSelectScreen() {
         </div>
 
         <div>
-          <KButton tone="white" onClick={() => dispatch({ type: 'PREFS_BACK' })}>
+          <KButton tone="white" full onClick={() => dispatch({ type: 'SOURCE_BACK' })}>
             Back to preferences
           </KButton>
         </div>

@@ -140,6 +140,7 @@ export interface SystemService {
   flags(): SystemFlags
   toggleOffline(): void
   toggleLicense(): void
+  activateLicense(): void
 }
 
 /* ============================================================
@@ -151,7 +152,7 @@ export interface KioskConfigService {
   load(): KioskConfig | null
   save(config: KioskConfig): void
   /** Clears license + configuration. Held customer sessions are kept. */
-  resetKiosk(): void
+  resetKiosk(kioskId?: string): void
   loadSetupProgress(): SetupProgress | null
   saveSetupProgress(progress: SetupProgress): void
   clearSetupProgress(): void

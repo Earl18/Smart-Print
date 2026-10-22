@@ -72,7 +72,7 @@ export default function PricingPage() {
               </li>
             ))}
           </ul>
-          <p className="mt-6 inline-flex rounded-xl border-2 border-black bg-kpaper px-4 py-2 text-sm font-bold">
+          <p className="mt-6 w-full rounded-xl border-2 border-black bg-kpaper px-4 py-2 text-center text-sm font-bold">
             1 to 10 copies of the same document per job — need more? Just start a second job.
           </p>
         </div>
@@ -196,21 +196,21 @@ export default function PricingPage() {
           <p className="mt-2 font-medium text-black/65">
             All three sizes are available at every kiosk.
           </p>
-          <div className="mt-8 max-w-3xl overflow-x-auto rounded-2xl border-[3px] border-black bg-white shadow-[5px_5px_0_#000]">
-            <table className="w-full border-collapse text-left text-sm">
+          <div className="mt-8 w-full overflow-x-auto rounded-2xl border-[3px] border-black bg-white shadow-[5px_5px_0_#000]">
+            <table className="w-full min-w-[640px] table-fixed border-collapse text-sm">
               <caption className="sr-only">Price per page by paper size and color mode</caption>
               <thead>
                 <tr className="border-b-[3px] border-black bg-kpaper">
-                  <th scope="col" className="px-4 py-3 font-display text-xs font-bold uppercase tracking-wide">
+                  <th scope="col" className="px-4 py-3 text-left font-display text-xs font-bold uppercase tracking-wide">
                     Paper size
                   </th>
-                  <th scope="col" className="px-4 py-3 font-display text-xs font-bold uppercase tracking-wide">
+                  <th scope="col" className="px-4 py-3 text-center font-display text-xs font-bold uppercase tracking-wide">
                     Dimensions
                   </th>
-                  <th scope="col" className="px-4 py-3 text-right font-display text-xs font-bold uppercase tracking-wide">
+                  <th scope="col" className="px-4 py-3 text-center font-display text-xs font-bold uppercase tracking-wide">
                     Black &amp; white
                   </th>
-                  <th scope="col" className="px-4 py-3 text-right font-display text-xs font-bold uppercase tracking-wide">
+                  <th scope="col" className="px-4 py-3 text-center font-display text-xs font-bold uppercase tracking-wide">
                     Colored
                   </th>
                 </tr>
@@ -218,12 +218,12 @@ export default function PricingPage() {
               <tbody>
                 {PAPER_SIZES.map((size) => (
                   <tr key={size.id} className="border-b-2 border-black/15 last:border-b-0">
-                    <th scope="row" className="px-4 py-3 font-display font-bold">
+                    <th scope="row" className="px-4 py-3 text-left font-display font-bold">
                       {size.label}
                     </th>
-                    <td className="px-4 py-3 font-medium text-black/70">{size.dims}</td>
-                    <td className="px-4 py-3 text-right font-semibold tabular-nums">₱{perPageRate(size.id, 'bw')}</td>
-                    <td className="px-4 py-3 text-right font-semibold tabular-nums">₱{perPageRate(size.id, 'color')}</td>
+                    <td className="px-4 py-3 text-center font-medium text-black/70">{size.dims}</td>
+                    <td className="px-4 py-3 text-center font-semibold tabular-nums">₱{perPageRate(size.id, 'bw')}</td>
+                    <td className="px-4 py-3 text-center font-semibold tabular-nums">₱{perPageRate(size.id, 'color')}</td>
                   </tr>
                 ))}
               </tbody>

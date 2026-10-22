@@ -15,7 +15,7 @@ const PAYMENT_STEPS = ['Open your e-wallet app', 'Scan this QR code', 'Check the
  * E-wallet payment — designed to fit every kiosk viewport (>= 768px tall)
  * on a single screen with no scrolling: the QR sits left while the amount,
  * steps, timer and waiting status share the right side of the same card,
- * and the policy note + cancel action share one compact footer row.
+ * with the payment notice and cancel action stacked below the card.
  */
 export function EwalletScreen() {
   const { state, dispatch } = useKiosk()
@@ -148,28 +148,22 @@ export function EwalletScreen() {
               </KCard>
             ) : null}
 
-            {/* Policy note + cancel action share one row to keep the screen above the fold */}
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-stretch">
-              <KCard tone="cream" className="flex flex-1 items-center gap-3 px-4 py-3">
+            <div className="flex min-w-0 flex-col gap-3">
+              <KCard tone="cream" className="flex w-full items-center gap-3 px-4 py-3">
                 <Info className="size-5 shrink-0" strokeWidth={2.5} aria-hidden />
                 <p className="text-sm font-semibold">
                   Your e-wallet is charged only after confirmation. Expired or failed payments never charge you.
                 </p>
               </KCard>
               {awaiting ? (
-                <KButton
-                  tone="white"
-                  icon={X}
-                  className="self-center"
-                  onClick={() => dispatch({ type: 'PAYMENT_CANCEL' })}
-                >
+                <KButton tone="white" icon={X} full onClick={() => dispatch({ type: 'PAYMENT_CANCEL' })}>
                   Cancel payment
                 </KButton>
               ) : null}
             </div>
           </div>
 
-          <PriceSummary compact className="w-full" />
+          <PriceSummary className="w-full" />
         </div>
       </motion.div>
     </div>

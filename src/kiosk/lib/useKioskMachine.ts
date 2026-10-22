@@ -30,12 +30,25 @@ function delay(ms: number) {
 export function useKioskMachine(): { state: KioskState; dispatch: (event: KioskEvent) => void } {
   const [state, rawDispatch] = useReducer(reducer, undefined, initialState)
   const stateRef = useRef(state)
-  stateRef.current = state
   const activityRef = useRef(Date.now())
+
+  useEffect(() => {
+    stateRef.current = state
+  }, [state])
 
   /* Wrap dispatch: some events need a service round-trip before they reach
      the reducer (recovery lookup, PIN verification, kiosk reset). */
   const dispatch = useCallback((event: KioskEvent) => {
+    if (
+      event.type === 'IDLE_DISMISS' ||
+      event.type === 'IDLE_EXPIRE' ||
+      event.type === 'RESET' ||
+      event.type === 'MAINTENANCE_CONFIRM_RESET' ||
+      event.type === 'ACTIVITY' ||
+      (event.type === 'TICK' && stateRef.current.idle.warning && stateRef.current.idle.remainSec <= 1)
+    ) {
+      activityRef.current = Date.now()
+    }
     if (event.type === 'OPEN_RECOVERY') {
       const stored = storageService.load()
       const s = stored.session
@@ -79,8 +92,8 @@ export function useKioskMachine(): { state: KioskState; dispatch: (event: KioskE
     if (event.type === 'MAINTENANCE_CONFIRM_RESET') {
       // Clears license + configuration; held customer sessions are kept.
       kioskConfigService.resetKiosk()
-      rawDispatch({ type: 'MAINTENANCE_CLOSE' })
       rawDispatch({ type: 'MAINTENANCE_RESET' })
+      rawDispatch({ type: 'DEV_CLOSE' })
       return
     }
     rawDispatch(event)
@@ -242,7 +255,6 @@ export function useKioskMachine(): { state: KioskState; dispatch: (event: KioskE
   useEffect(() => {
     const onActivity = () => {
       activityRef.current = Date.now()
-      if (stateRef.current.idle.warning) dispatch({ type: 'ACTIVITY' })
     }
     const onContextMenu = (e: MouseEvent) => e.preventDefault()
     const onKeyDown = (e: KeyboardEvent) => {
@@ -335,8 +347,7 @@ export function useKioskMachine(): { state: KioskState; dispatch: (event: KioskE
       }),
       signal: controller.signal,
     }).catch(() => {
-      /* offline kiosks never reach the QR step; a blip here just means the
-         phone page will show its connection-lost state until it retries */
+      /* The demo upload does not depend on session registration. */
     })
     return () => controller.abort()
   }, [state.phase, state.source, state.payment.orderRef, state.prefs])

@@ -610,9 +610,9 @@ export function todayTransactions(kioskIds?: string[]): Transaction[] {
 }
 
 /* ============================================================
-   Phone upload sessions (in-memory, TTL 30 minutes).
-   The kiosk registers a session when the QR screen opens; the
-   phone page fetches it and posts the file; the kiosk polls for it.
+   QR demo sessions (in-memory, TTL 30 minutes).
+   The phone sends only document metadata; the kiosk polls for that
+   short-lived signal. No document bytes are stored.
    ============================================================ */
 
 const SESSION_TTL_MS = 30 * 60 * 1000
@@ -666,7 +666,12 @@ export function setUploadedFile(sessionId: string, file: UploadedFile): void {
 }
 
 export function getUploadedFile(sessionId: string): UploadedFile | null {
-  return uploadFiles.get(sessionId) ?? null
+  const file = uploadFiles.get(sessionId)
+  if (file && Date.now() - file.receivedAt > SESSION_TTL_MS) {
+    uploadFiles.delete(sessionId)
+    return null
+  }
+  return file ?? null
 }
 
 export function clearUploadedFile(sessionId: string): void {

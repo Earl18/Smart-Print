@@ -48,6 +48,7 @@ import {
   deviceCheckService,
   kioskConfigService,
   networkSetupService,
+  systemService,
 } from '@/kiosk/services'
 import type { KioskConfig, SetupProgress, WifiNetwork } from '@/kiosk/lib/types'
 import type { ConnectStage, ConnectStageState, PublishedSettings as Published } from '@/kiosk/services'
@@ -204,32 +205,31 @@ export function SetupWizardScreen() {
       </motion.div>
 
       {/* Footer navigation — Back and Cancel on every step except the first */}
-      <div className="flex flex-wrap items-center gap-3 border-t-[3px] border-black pt-5">
+      <div className="grid grid-cols-2 items-center gap-3 border-t-[3px] border-black pt-5 sm:grid-cols-[auto_minmax(0,1fr)_auto]">
         {step > 1 ? (
           <>
             <KButton tone="white" icon={ChevronLeft} onClick={goBack}>
               Back
             </KButton>
-            <button
-              type="button"
+            <KButton
+              tone="coral"
+              icon={XCircle}
               onClick={cancel}
-              className="inline-flex min-h-16 items-center gap-2 px-2 font-display text-base font-bold underline decoration-[3px] underline-offset-4 hover:bg-kcoral/30 focus-visible:outline-[3px]"
+              className="col-span-2 row-start-2 w-full sm:col-span-1 sm:col-start-2 sm:row-start-1"
             >
-              <XCircle className="size-5" strokeWidth={2.5} aria-hidden />
               Cancel setup
-            </button>
+            </KButton>
           </>
         ) : null}
-        <div className="ml-auto">
-          <KButton
-            size="lg"
-            icon={step === 6 ? CheckCircle2 : ArrowRight}
-            disabled={!canContinue(step)}
-            onClick={goNext}
-          >
-            {primaryLabel[step]}
-          </KButton>
-        </div>
+        <KButton
+          size="lg"
+          icon={step === 6 ? CheckCircle2 : ArrowRight}
+          disabled={!canContinue(step)}
+          onClick={goNext}
+          className="col-start-2 row-start-1 justify-self-end sm:col-start-3"
+        >
+          {primaryLabel[step]}
+        </KButton>
       </div>
     </div>
   )
@@ -659,34 +659,40 @@ function StepLicense({
   const [status, setStatus] = useState<'idle' | 'checking' | 'valid' | 'invalid' | 'expired' | 'in_use'>(
     draft.licenseInfo ? 'valid' : 'idle',
   )
+  const validationAttempt = useRef(0)
 
   const runValidation = useCallback(
     async (key: string) => {
-      if (formatLicenseKey(key).length !== 19) return
+      const formatted = formatLicenseKey(key)
+      if (formatted.length !== 19) return
+      const attempt = ++validationAttempt.current
       setStatus('checking')
-      const res = await networkSetupService.validateLicense(formatLicenseKey(key))
+      const res = await networkSetupService.validateLicense(formatted)
+      if (attempt !== validationAttempt.current) return
       if (res.status === 'valid' && res.operatorName && res.kioskName) {
-        patch({ licenseKey: formatLicenseKey(key), licenseInfo: { operatorName: res.operatorName, kioskName: res.kioskName } })
+        systemService.activateLicense()
+        patch({ licenseKey: formatted, licenseInfo: { operatorName: res.operatorName, kioskName: res.kioskName } })
       } else {
-        patch({ licenseKey: formatLicenseKey(key), licenseInfo: null })
+        patch({ licenseKey: formatted, licenseInfo: null })
       }
       setStatus(res.status)
     },
     [patch],
   )
 
-  /* Operator-panel helper: fills and validates a license key. */
+  /* Operator-panel helper: fills the key; the user activates it separately. */
   useEffect(() => {
     const onFill = (e: Event) => {
       const key = (e as CustomEvent<string>).detail
       if (typeof key !== 'string') return
-      const formatted = formatLicenseKey(key)
-      setValue(formatted)
-      void runValidation(formatted)
+      validationAttempt.current += 1
+      setValue(formatLicenseKey(key))
+      setStatus('idle')
+      patch({ licenseKey: null, licenseInfo: null })
     }
     window.addEventListener('smartprint:fill-license', onFill)
     return () => window.removeEventListener('smartprint:fill-license', onFill)
-  }, [runValidation])
+  }, [patch])
 
   return (
     <div className="flex flex-col gap-5">
@@ -698,8 +704,10 @@ function StepLicense({
           id="license-key"
           value={value}
           onChange={(e) => {
+            validationAttempt.current += 1
             setValue(formatLicenseKey(e.target.value))
-            if (status !== 'idle') setStatus('idle')
+            setStatus('idle')
+            patch({ licenseKey: null, licenseInfo: null })
           }}
           placeholder="XXXX-XXXX-XXXX-XXXX"
           autoComplete="off"
@@ -787,31 +795,47 @@ const DEVICE_META: Record<string, { label: string; icon: typeof Printer }> = {
   bluetooth: { label: 'Bluetooth', icon: Bluetooth },
   usb: { label: 'USB port', icon: Usb },
 }
+const DEVICE_IDS = Object.keys(DEVICE_META)
 
 function StepDevices({ onStatus }: { onStatus: (running: boolean, cleared: boolean | null) => void }) {
   const [results, setResults] = useState<import('@/kiosk/lib/types').DeviceStatus[] | null>(null)
   const [running, setRunning] = useState(false)
-  const once = useRef(false)
+  const [checkIndex, setCheckIndex] = useState(0)
+  const [checkError, setCheckError] = useState(false)
+  const runId = useRef(0)
 
   const run = useCallback(async () => {
+    const currentRun = ++runId.current
     setRunning(true)
+    setResults([])
+    setCheckIndex(0)
+    setCheckError(false)
     try {
       const list = await deviceCheckService.runChecks()
-      setResults(list)
+      for (let i = 0; i < DEVICE_IDS.length; i += 1) {
+        if (currentRun !== runId.current) return
+        setCheckIndex(i)
+        await new Promise((resolve) => setTimeout(resolve, 400))
+        if (currentRun !== runId.current) return
+        setResults(list.slice(0, i + 1))
+      }
+    } catch {
+      if (currentRun !== runId.current) return
+      setResults(null)
+      setCheckError(true)
     } finally {
-      setRunning(false)
+      if (currentRun === runId.current) setRunning(false)
     }
   }, [])
 
   useEffect(() => {
-    if (once.current) return
-    once.current = true
     void run()
+    return () => { runId.current += 1 }
   }, [run])
 
   useEffect(() => {
     const blocking = results?.some((r) => r.state === 'fail' && r.blocking) ?? false
-    onStatus(running, results === null ? null : !blocking)
+    onStatus(running, results?.length === DEVICE_IDS.length ? !blocking : null)
   }, [results, running, onStatus])
 
   const blocking = results?.filter((r) => r.state === 'fail' && r.blocking) ?? []
@@ -823,12 +847,24 @@ function StepDevices({ onStatus }: { onStatus: (running: boolean, cleared: boole
         <div className="flex items-center justify-between gap-3">
           <h3 className="font-display text-lg font-bold">Hardware check</h3>
           <KButton tone="white" size="md" icon={RefreshCcw} onClick={() => void run()} disabled={running}>
-            Recheck
+            {running ? 'Checking…' : 'Recheck'}
           </KButton>
         </div>
 
+        {running ? (
+          <div className="mt-4" aria-live="polite">
+            <p className="flex items-center justify-between gap-3 text-sm font-semibold">
+              <span>Checking {DEVICE_META[DEVICE_IDS[checkIndex]].label}…</span>
+              <span>{results?.length ?? 0} of {DEVICE_IDS.length} checked</span>
+            </p>
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-black/10">
+              <div className="h-full bg-klime transition-[width] duration-300" style={{ width: `${((results?.length ?? 0) / DEVICE_IDS.length) * 100}%` }} />
+            </div>
+          </div>
+        ) : null}
+
         <ul className="mt-4 flex flex-col gap-2.5">
-          {(Object.keys(DEVICE_META) as Array<keyof typeof DEVICE_META>).map((id) => {
+          {DEVICE_IDS.map((id, index) => {
             const meta = DEVICE_META[id]
             const r = results?.find((x) => x.id === id)
             const Icon = meta.icon
@@ -840,12 +876,14 @@ function StepDevices({ onStatus }: { onStatus: (running: boolean, cleared: boole
                 <span className="min-w-0">
                   <span className="block font-display text-[15px] font-bold">{meta.label}</span>
                   <span className="block truncate text-sm font-medium text-black/60">
-                    {r ? r.detail : 'Checking…'}
+                    {r ? r.detail : running && index === checkIndex ? 'Checking…' : 'Waiting to check'}
                   </span>
                 </span>
                 <span className="ml-auto shrink-0">
-                  {!r ? (
+                  {!r && running && index === checkIndex ? (
                     <Loader2 className="size-6 animate-spin" strokeWidth={2.5} aria-label="Checking" />
+                  ) : !r ? (
+                    <span className="text-xs font-bold text-black/45">Pending</span>
                   ) : r.state === 'ok' ? (
                     <StatusPill tone="ok" icon={CheckCircle2}>
                       OK
@@ -865,6 +903,10 @@ function StepDevices({ onStatus }: { onStatus: (running: boolean, cleared: boole
           })}
         </ul>
       </KCard>
+
+      {checkError ? (
+        <Notice icon={TriangleAlert}>The device check could not finish. Press Recheck to try again.</Notice>
+      ) : null}
 
       {running === false && blocking.length > 0 ? (
         <KCard tone="coral">

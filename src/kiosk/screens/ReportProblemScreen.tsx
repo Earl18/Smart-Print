@@ -101,11 +101,11 @@ export function ReportProblemScreen() {
           />
         </KCard>
 
-        <div className="flex flex-wrap items-center gap-2.5">
-          <span className="rounded-xl border-[3px] border-black bg-white px-3 py-1.5 font-mono text-sm font-bold">
+        <div className="grid grid-cols-2 gap-2.5">
+          <span className="flex min-w-0 items-center justify-center break-all rounded-xl border-[3px] border-black bg-white px-2 py-1.5 text-center font-mono text-xs font-bold sm:text-sm">
             Job {state.job.id}
           </span>
-          <span className="rounded-xl border-[3px] border-black bg-white px-3 py-1.5 font-mono text-sm font-bold">
+          <span className="flex min-w-0 items-center justify-center break-all rounded-xl border-[3px] border-black bg-white px-2 py-1.5 text-center font-mono text-xs font-bold sm:text-sm">
             Order {state.payment.orderRef}
           </span>
         </div>

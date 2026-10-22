@@ -1,14 +1,33 @@
 'use client'
 
+import { useState } from 'react'
 import { KeySquare, RefreshCcw, TriangleAlert, WifiOff, Wrench } from 'lucide-react'
 import { useKiosk } from '@/kiosk/KioskContext'
 import { KButton, KCard, StatusPill } from '@/kiosk/components/primitives'
+import { kioskConfigService, networkSetupService, systemService } from '@/kiosk/services'
 
 export function SetupRequiredScreen() {
   const { state, dispatch } = useKiosk()
+  const [retrying, setRetrying] = useState(false)
   const reasons: string[] = []
   if (!state.online) reasons.push('No internet connection')
   if (!state.licenseOk) reasons.push('Kiosk license is not active')
+
+  const retry = async () => {
+    setRetrying(true)
+    try {
+      const saved = kioskConfigService.load()
+      if (!state.licenseOk && saved?.license.key) {
+        const validation = await networkSetupService.validateLicense(saved.license.key)
+        if (validation.status === 'valid') systemService.activateLicense()
+      }
+    } catch {
+      // Boot will report the remaining issue if the service cannot be reached.
+    } finally {
+      setRetrying(false)
+      dispatch({ type: 'RETRY_SETUP' })
+    }
+  }
 
   return (
     <div className="flex min-h-full items-center justify-center px-4 py-10">
@@ -35,8 +54,8 @@ export function SetupRequiredScreen() {
           ))}
         </ul>
 
-        <KButton icon={RefreshCcw} onClick={() => dispatch({ type: 'RETRY_SETUP' })}>
-          Try again
+        <KButton icon={RefreshCcw} onClick={() => void retry()} disabled={retrying}>
+          {retrying ? 'Checking…' : 'Try again'}
         </KButton>
 
         <p className="flex items-center gap-2 text-xs font-semibold text-black/50">

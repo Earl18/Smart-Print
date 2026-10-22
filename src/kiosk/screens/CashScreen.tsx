@@ -15,8 +15,8 @@ const CASH_DENOMINATIONS = [20, 50, 100, 200, 500, 1000]
  * Cash payment — fits every kiosk viewport (>= 768px tall) on a single
  * screen: the amount due and accepted bills sit left while the live
  * received/remaining counters, timer and guidance share the right side
- * of the same card, and the policy note + cancel action share one
- * compact footer row.
+ * of the same card. The payment notice and cancel action sit directly
+ * below the cash card.
  */
 export function CashScreen() {
   const { state, dispatch } = useKiosk()
@@ -39,9 +39,9 @@ export function CashScreen() {
           <div className="flex min-w-0 flex-col gap-4">
             {/* Main card — amount + bills left, live counters and timer right */}
             <KCard className="p-4 sm:p-5">
-              <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-center gap-5 sm:grid-cols-[190px_minmax(0,1fr)]">
                 <h3 className="font-display text-xl font-bold sm:text-2xl">Insert cash</h3>
-                <span className="inline-flex items-center rounded-lg border-[3px] border-black bg-white px-3 py-1 font-mono text-sm font-bold">
+                <span className="inline-flex min-w-0 items-center justify-center rounded-lg border-[3px] border-black bg-white px-1 py-1 font-mono text-[10px] font-bold sm:px-3 sm:text-sm">
                   Ref {payment.reference}
                 </span>
               </div>
@@ -163,28 +163,22 @@ export function CashScreen() {
               </KCard>
             ) : null}
 
-            {/* Policy note + cancel action share one row to keep the screen above the fold */}
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-stretch">
-              <KCard tone="cream" className="flex flex-1 items-center gap-3 px-4 py-3">
+            <div className="flex min-w-0 flex-col gap-3">
+              <KCard tone="cream" className="flex w-full items-center gap-3 px-4 py-3">
                 <Info className="size-5 shrink-0" strokeWidth={2.5} aria-hidden />
                 <p className="text-sm font-semibold">
                   Overpayments are automatically returned from the cash tray below the keypad.
                 </p>
               </KCard>
               {awaiting ? (
-                <KButton
-                  tone="white"
-                  icon={X}
-                  className="self-center"
-                  onClick={() => dispatch({ type: 'PAYMENT_CANCEL' })}
-                >
+                <KButton tone="white" icon={X} full onClick={() => dispatch({ type: 'PAYMENT_CANCEL' })}>
                   Cancel payment
                 </KButton>
               ) : null}
             </div>
           </div>
 
-          <PriceSummary compact className="w-full" />
+          <PriceSummary className="w-full" />
         </div>
       </motion.div>
     </div>
