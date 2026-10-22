@@ -22,8 +22,6 @@ import type {
   SiteContent,
   SupportEvent,
   Transaction,
-  UploadSession,
-  UploadedFile,
   User,
 } from './types'
 
@@ -607,75 +605,4 @@ export function sameDayIso(a: string, b: Date): boolean {
 export function todayTransactions(kioskIds?: string[]): Transaction[] {
   const now = new Date()
   return transactions.filter((tx) => sameDayIso(tx.at, now) && (!kioskIds || kioskIds.includes(tx.kioskId)))
-}
-
-/* ============================================================
-   QR demo sessions (in-memory, TTL 30 minutes).
-   The phone sends only document metadata; the kiosk polls for that
-   short-lived signal. No document bytes are stored.
-   ============================================================ */
-
-const SESSION_TTL_MS = 30 * 60 * 1000
-const uploadSessions = new Map<string, UploadSession>()
-const uploadFiles = new Map<string, UploadedFile>()
-
-export const UPLOAD_LIMITS = {
-  maxBytes: 20 * 1024 * 1024,
-  extensions: ['pdf', 'docx', 'doc', 'jpg', 'jpeg', 'png'],
-}
-
-export function registerUploadSession(input: { sessionId: string; kioskName: string; prefs: UploadSession['prefs'] }): UploadSession {
-  const existing = uploadSessions.get(input.sessionId)
-  const session: UploadSession = {
-    sessionId: input.sessionId,
-    kioskName: input.kioskName,
-    prefs: input.prefs,
-    status: 'waiting',
-    createdAt: existing?.createdAt ?? Date.now(),
-    expiresAt: Date.now() + SESSION_TTL_MS,
-  }
-  uploadSessions.set(input.sessionId, session)
-  return session
-}
-
-export function getUploadSession(sessionId: string): UploadSession | null {
-  const s = uploadSessions.get(sessionId)
-  if (!s) return null
-  if (Date.now() > s.expiresAt) {
-    uploadSessions.delete(sessionId)
-    uploadFiles.delete(sessionId)
-    return null
-  }
-  return s
-}
-
-export function markUploadReceived(sessionId: string): void {
-  const s = uploadSessions.get(sessionId)
-  if (s) s.status = 'received'
-}
-
-export function markUploadDone(sessionId: string): void {
-  const s = uploadSessions.get(sessionId)
-  if (s) s.status = 'done'
-  uploadFiles.delete(sessionId)
-}
-
-export function setUploadedFile(sessionId: string, file: UploadedFile): void {
-  uploadFiles.set(sessionId, file)
-  markUploadReceived(sessionId)
-}
-
-export function getUploadedFile(sessionId: string): UploadedFile | null {
-  const file = uploadFiles.get(sessionId)
-  if (file && Date.now() - file.receivedAt > SESSION_TTL_MS) {
-    uploadFiles.delete(sessionId)
-    return null
-  }
-  return file ?? null
-}
-
-export function clearUploadedFile(sessionId: string): void {
-  uploadFiles.delete(sessionId)
-  const s = uploadSessions.get(sessionId)
-  if (s && s.status === 'received') s.status = 'waiting'
 }

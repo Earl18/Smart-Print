@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { clearUploadedFile, getUploadedFile, getUploadSession, setUploadedFile } from '@/lib/data/db'
+import { clearUploadedFile, getUploadedFile, setUploadedFile } from '@/lib/data/upload-store'
 
 export const runtime = 'nodejs'
 
 export async function GET(request: NextRequest) {
   const sessionId = request.nextUrl.searchParams.get('sessionId')
-  if (!sessionId) return NextResponse.json({ error: 'Missing session ID' }, { status: 400 })
-  const file = getUploadedFile(sessionId)
-  return NextResponse.json({ status: file ? 'received' : 'waiting', file })
+  if (!sessionId || !/^SP-[A-Za-z0-9-]{1,60}$/.test(sessionId)) {
+    return NextResponse.json({ error: 'Invalid session ID' }, { status: 400 })
+  }
+  try {
+    const file = await getUploadedFile(sessionId)
+    return NextResponse.json({ status: file ? 'received' : 'waiting', file }, { headers: { 'Cache-Control': 'no-store' } })
+  } catch {
+    return NextResponse.json({ error: 'QR storage is unavailable' }, { status: 503 })
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -28,7 +34,18 @@ export async function POST(request: NextRequest) {
   if (typeof sessionId !== 'string' || !/^SP-[A-Za-z0-9-]{1,60}$/.test(sessionId)) {
     return NextResponse.json({ error: 'Invalid demo session' }, { status: 400 })
   }
-  if (!getUploadSession(sessionId)) {
+  let stored: boolean
+  try {
+    stored = await setUploadedFile(sessionId, {
+      fileName: 'Demo-Document.pdf',
+      sizeBytes: 1_842_000,
+      fileType: 'pdf',
+      receivedAt: Date.now(),
+    })
+  } catch {
+    return NextResponse.json({ error: 'QR storage is unavailable' }, { status: 503 })
+  }
+  if (!stored) {
     if (fromForm) {
       return new Response(null, {
         status: 303,
@@ -37,12 +54,6 @@ export async function POST(request: NextRequest) {
     }
     return NextResponse.json({ error: 'Upload session expired or unavailable' }, { status: 404 })
   }
-  setUploadedFile(sessionId, {
-    fileName: 'Demo-Document.pdf',
-    sizeBytes: 1_842_000,
-    fileType: 'pdf',
-    receivedAt: Date.now(),
-  })
   if (fromForm) {
     // A relative redirect keeps the phone on the LAN host it scanned.
     return new Response(null, {
@@ -55,7 +66,13 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   const sessionId = request.nextUrl.searchParams.get('sessionId')
-  if (!sessionId) return NextResponse.json({ error: 'Missing session ID' }, { status: 400 })
-  clearUploadedFile(sessionId)
-  return NextResponse.json({ status: 'cleared' })
+  if (!sessionId || !/^SP-[A-Za-z0-9-]{1,60}$/.test(sessionId)) {
+    return NextResponse.json({ error: 'Invalid session ID' }, { status: 400 })
+  }
+  try {
+    await clearUploadedFile(sessionId)
+    return NextResponse.json({ status: 'cleared' }, { headers: { 'Cache-Control': 'no-store' } })
+  } catch {
+    return NextResponse.json({ error: 'QR storage is unavailable' }, { status: 503 })
+  }
 }

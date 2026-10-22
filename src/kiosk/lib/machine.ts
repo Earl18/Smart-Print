@@ -32,11 +32,9 @@ const IDLEABLE_PHASES: Phase[] = [
   'PAY_EWALLET',
 ]
 
-let refCounter = 0
 export function makeRef(prefix: string): string {
-  refCounter = (refCounter + 1) % 10000
-  const rand = Math.floor(Math.random() * 900000) + 100000
-  return `${prefix}-${rand}`
+  const bytes = crypto.getRandomValues(new Uint8Array(12))
+  return `${prefix}-${Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')}`
 }
 
 const DEFAULT_PRINTER: PrinterHealth = { ready: true, paper: 'ok', message: 'Ready to print' }

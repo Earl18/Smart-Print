@@ -1,4 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "npm ci"
+  "installCommand": "npm ci",
+  "crons": [
+    { "path": "/api/upload/cleanup", "schedule": "0 3 * * *" }
+  ]
 }

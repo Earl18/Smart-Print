@@ -346,8 +346,12 @@ export function useKioskMachine(): { state: KioskState; dispatch: (event: KioskE
         prefs: s.prefs,
       }),
       signal: controller.signal,
+    }).then((response) => {
+      if (!response.ok) throw new Error('QR session registration failed')
     }).catch(() => {
-      /* The demo upload does not depend on session registration. */
+      if (!controller.signal.aborted) {
+        dispatch({ type: 'INTAKE_FAILED', kind: 'error', reason: 'QR upload is unavailable. Please try another method.' })
+      }
     })
     return () => controller.abort()
   }, [state.phase, state.source, state.payment.orderRef, state.prefs])

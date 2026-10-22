@@ -63,6 +63,7 @@ function QrReceivingScreen() {
   const { state, dispatch } = useKiosk()
   const intake = state.intake
   const [uploadOrigin, setUploadOrigin] = useState('')
+  const [readySessionId, setReadySessionId] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -77,7 +78,31 @@ function QrReceivingScreen() {
     return () => { active = false }
   }, [])
 
-  const uploadUrl = uploadOrigin && state.payment.orderRef
+  useEffect(() => {
+    const sessionId = state.payment.orderRef
+    if (!sessionId || intake.status === 'error' || intake.status === 'timeout') return
+    let active = true
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const checkSession = async () => {
+      try {
+        const response = await fetch(`/api/upload/session?sessionId=${encodeURIComponent(sessionId)}`, { cache: 'no-store' })
+        if (response.ok) {
+          if (active) setReadySessionId(sessionId)
+          return
+        }
+      } catch {
+        // Registration may still be in progress. Retry while this screen is open.
+      }
+      if (active) timer = setTimeout(checkSession, 500)
+    }
+    void checkSession()
+    return () => {
+      active = false
+      if (timer) clearTimeout(timer)
+    }
+  }, [state.payment.orderRef, intake.status])
+
+  const uploadUrl = uploadOrigin && readySessionId === state.payment.orderRef
     ? `${uploadOrigin}/upload/${encodeURIComponent(state.payment.orderRef)}`
     : ''
   const failed = intake.status === 'timeout' || intake.status === 'error'
