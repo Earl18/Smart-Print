@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
   ArrowRight,
@@ -56,6 +57,7 @@ const TODAY_ROWS = [
  * compact vertical rhythm and one-glance info card.
  */
 export function WelcomeScreen() {
+  const router = useRouter()
   const { state, dispatch } = useKiosk()
   const printerOk = state.printer.ready && state.printer.paper !== 'out'
 
@@ -123,7 +125,7 @@ export function WelcomeScreen() {
                 full
                 className="px-5! text-center"
                 onClick={() => {
-                  window.location.href = '/?from=kiosk'
+                  router.push('/')
                 }}
               >
                 Visit Smart Print website

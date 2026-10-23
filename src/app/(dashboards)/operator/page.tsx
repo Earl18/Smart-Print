@@ -2,8 +2,8 @@
 
 /* ============================================================
    Operator dashboard — Marco's view of his own kiosks.
-   Sections are switched with internal tab state: a scrollable
-   chip bar from sm upward and a fixed bottom tab bar on phones.
+   Sections are switched with internal tab state: a section menu
+   from sm upward and a fixed bottom tab bar on phones.
    The (dashboards) layout already handles the auth gate and
    renders this page only after mount.
    ============================================================ */
@@ -22,6 +22,7 @@ import {
 import { useAuth } from '@/lib/auth/AuthProvider'
 import { kiosksForUser } from '@/lib/data/db'
 import type { KioskRecord } from '@/lib/data/types'
+import { DashboardSectionNav } from '@/components/dashboards/DashboardSectionNav'
 import { cn } from '@/lib/utils'
 import OverviewSection from '@/components/dashboards/operator/OverviewSection'
 import SalesSection from '@/components/dashboards/operator/SalesSection'
@@ -68,31 +69,18 @@ export default function OperatorPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-end justify-between gap-2 pt-1">
-        <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">Operator dashboard</h1>
-        <p className="text-xs font-bold text-black/55 sm:text-sm">{dateLabel}</p>
-      </div>
-
-      {/* Tablet/desktop tab bar */}
-      <div className="kb-scroll -mx-1 hidden overflow-x-auto px-1 sm:block" role="group" aria-label="Dashboard sections">
-        <div className="flex w-max gap-2 pb-1">
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              aria-pressed={tab === t.id}
-              onClick={() => setTab(t.id)}
-              className={cn(
-                'flex min-h-11 shrink-0 items-center gap-2 rounded-xl border-[3px] border-black px-4 font-display text-sm font-bold shadow-[3px_3px_0_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0_#000]',
-                tab === t.id ? 'bg-black text-white' : 'bg-white',
-              )}
-            >
-              <t.icon className="size-4 shrink-0" strokeWidth={2.5} aria-hidden />
-              {t.label}
-            </button>
-          ))}
+      {tab === 'overview' ? (
+        <div className="flex flex-wrap items-end justify-between gap-2 pt-1">
+          <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">Operator dashboard</h1>
+          <p className="text-xs font-bold text-black/55 sm:ml-auto sm:text-sm">{dateLabel}</p>
         </div>
-      </div>
+      ) : null}
+      <DashboardSectionNav
+        sections={TABS}
+        activeSection={tab}
+        onSelect={setTab}
+        label="Dashboard sections"
+      />
 
       {/* Sections */}
       {tab === 'overview' ? <OverviewSection user={user} kiosks={kiosks} /> : null}
@@ -127,10 +115,8 @@ export default function OperatorPage() {
         />
       ) : null}
 
-      {/* Spacer so the fixed phone tab bar never covers content */}
       <div aria-hidden className="pb-24 sm:pb-0" />
 
-      {/* Phone bottom tab bar */}
       <nav
         aria-label="Dashboard sections"
         className="fixed inset-x-0 bottom-0 z-40 border-t-[3px] border-black bg-white pb-[env(safe-area-inset-bottom)] sm:hidden"
@@ -153,6 +139,7 @@ export default function OperatorPage() {
           ))}
         </div>
       </nav>
+
     </div>
   )
 }

@@ -122,11 +122,12 @@ export default function DashboardsLayout({ children }: { children: React.ReactNo
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
             <TopLink href="/" label="Back to website" />
             <TopLink href="/kiosk" label="Open kiosk" primary />
+            <div id="dashboard-menu-slot" className="hidden sm:block" />
             <button
               type="button"
               onClick={() => void handleSignOut()}
               aria-label="Sign out"
-              className="flex size-11 items-center justify-center rounded-xl border-[3px] border-black bg-white shadow-[3px_3px_0_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0_#000]"
+              className="flex size-11 items-center justify-center rounded-xl border-[3px] border-black bg-white shadow-[3px_3px_0_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0_#000] sm:hidden"
             >
               <LogOut className="size-5" strokeWidth={2.5} aria-hidden />
             </button>

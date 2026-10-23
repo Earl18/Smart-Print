@@ -4,11 +4,11 @@
    Admin Console — /admin
    Fleet-wide control: overview, licenses, operators, fleet,
    support events, diagnostics lab, site content and audit log.
-   Internal tab state: scrollable chips on sm+, fixed bottom tab
+   Internal tab state: section menu on sm+, fixed bottom tab
    bar on phones.
    ============================================================ */
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   FlaskConical,
   Globe,
@@ -22,6 +22,7 @@ import {
 import type { LucideIcon } from 'lucide-react'
 import { useAuth } from '@/lib/auth/AuthProvider'
 import { Badge } from '@/components/site/primitives'
+import { DashboardSectionNav } from '@/components/dashboards/DashboardSectionNav'
 import { cn } from '@/lib/utils'
 import { OverviewSection } from '@/components/dashboards/admin/OverviewSection'
 import { LicensesSection } from '@/components/dashboards/admin/LicensesSection'
@@ -54,6 +55,56 @@ export default function AdminPage() {
   // Fresh clock so relative times stay honest (safe: page renders after mount).
   const [now, setNow] = useState(() => new Date())
 
+  const barRef = useRef<HTMLDivElement>(null)
+  const drag = useRef({ moved: false, startX: 0, startLeft: 0 })
+
+  useEffect(() => {
+    barRef.current
+      ?.querySelector('[aria-selected="true"]')
+      ?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  }, [tab])
+
+  useEffect(() => {
+    const el = barRef.current
+    if (!el) return
+    const onWheel = (e: WheelEvent) => {
+      if (el.scrollWidth <= el.clientWidth) return
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return
+      e.preventDefault()
+      el.scrollLeft += e.deltaMode === 1 ? e.deltaY * 40 : e.deltaY
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [])
+
+  const startBarDrag = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== 'mouse' || e.button !== 0) return
+    const el = barRef.current
+    if (!el || el.scrollWidth <= el.clientWidth) return
+    drag.current = { moved: false, startX: e.clientX, startLeft: el.scrollLeft }
+    const onMove = (ev: PointerEvent) => {
+      const dx = ev.clientX - drag.current.startX
+      if (!drag.current.moved && Math.abs(dx) > 6) drag.current.moved = true
+      if (drag.current.moved) el.scrollLeft = drag.current.startLeft - dx
+    }
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      window.removeEventListener('pointercancel', onUp)
+      window.setTimeout(() => {
+        drag.current.moved = false
+      }, 0)
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+    window.addEventListener('pointercancel', onUp)
+  }
+
+  const selectTab = (id: TabId) => {
+    if (drag.current.moved) return
+    setTab(id)
+  }
+
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 30_000)
     return () => window.clearInterval(timer)
@@ -63,43 +114,24 @@ export default function AdminPage() {
 
   return (
     <div className="flex flex-col">
-      {/* Page heading */}
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      {/* Dashboard introduction belongs to Overview only. */}
+      {tab === 'overview' ? (
         <div>
-          <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">Admin console</h1>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">Admin console</h1>
+            <Badge tone="coral">Full fleet access</Badge>
+          </div>
           <p className="mt-1 max-w-xl text-sm font-semibold text-black/60">
             Fleet-wide control for licenses, kiosks, operators, site content and the audit trail.
           </p>
         </div>
-        <Badge tone="coral">Full fleet access</Badge>
-      </div>
-
-      {/* Chips tab bar — sm and up */}
-      <nav
-        aria-label="Admin sections"
-        className="sticky top-16 z-30 -mx-3 mt-5 border-b-[3px] border-black bg-kpaper px-3 py-3 sm:top-[72px] sm:-mx-6 sm:px-6"
-      >
-        <div role="tablist" aria-label="Admin sections" className="kb-scroll flex gap-2 overflow-x-auto">
-          {TABS.map((t) => {
-            const active = tab === t.id
-            return (
-              <button
-                key={t.id}
-                role="tab"
-                aria-selected={active}
-                onClick={() => setTab(t.id)}
-                className={cn(
-                  'flex min-h-14 shrink-0 items-center gap-2 rounded-xl border-[3px] border-black px-4 font-display text-sm font-bold shadow-[4px_4px_0_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0_#000]',
-                  active ? 'bg-black text-white' : 'bg-white',
-                )}
-              >
-                <t.icon className="size-4 shrink-0" strokeWidth={2.5} aria-hidden />
-                {t.label}
-              </button>
-            )
-          })}
-        </div>
-      </nav>
+      ) : null}
+      <DashboardSectionNav
+        sections={TABS}
+        activeSection={tab}
+        onSelect={setTab}
+        label="Admin sections"
+      />
 
       {/* Active section */}
       <div className="mt-5" role="tabpanel">
@@ -113,15 +145,19 @@ export default function AdminPage() {
         {tab === 'audit' ? <AuditSection now={now} /> : null}
       </div>
 
-      {/* Spacer so the fixed phone tab bar never covers content */}
       <div aria-hidden className="h-24 sm:hidden" />
 
-      {/* Bottom tab bar — phones only */}
       <nav
         aria-label="Admin sections"
         className="fixed inset-x-0 bottom-0 z-40 border-t-[3px] border-black bg-white sm:hidden"
       >
-        <div role="tablist" aria-label="Admin sections" className="grid grid-cols-4 pb-[env(safe-area-inset-bottom)]">
+        <div
+          ref={barRef}
+          role="tablist"
+          aria-label="Admin sections"
+          onPointerDown={startBarDrag}
+          className="flex cursor-grab select-none overflow-x-auto pb-[env(safe-area-inset-bottom)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
           {TABS.map((t) => {
             const active = tab === t.id
             return (
@@ -129,9 +165,9 @@ export default function AdminPage() {
                 key={t.id}
                 role="tab"
                 aria-selected={active}
-                onClick={() => setTab(t.id)}
+                onClick={() => selectTab(t.id)}
                 className={cn(
-                  'flex min-h-16 flex-col items-center justify-center gap-0.5 px-1 font-display text-[10px] font-bold leading-tight',
+                  'flex min-h-16 w-max shrink-0 flex-col items-center justify-center gap-0.5 px-4 font-display text-[10px] font-bold leading-tight',
                   active ? 'bg-klime' : 'bg-white',
                 )}
               >
@@ -142,6 +178,7 @@ export default function AdminPage() {
           })}
         </div>
       </nav>
+
     </div>
   )
 }

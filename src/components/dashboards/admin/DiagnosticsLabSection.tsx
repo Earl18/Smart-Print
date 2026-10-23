@@ -3,7 +3,7 @@
 /* Section 6 — Diagnostics Lab: force component states, preview the
    customer impact, and run power-loss tests. Every action is audited. */
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Banknote,
   CheckCircle2,
@@ -55,7 +55,45 @@ const SEGMENTS: Array<{ state: DiagnosticState; label: string; icon: typeof Chec
 export function DiagnosticsLabSection({ user, bump }: { user: PublicUser; bump: () => void }) {
   const [kioskId, setKioskId] = useState(kiosks[0]?.id ?? '')
   const [outageTest, setOutageTest] = useState<number | null>(null)
+  const pickerRef = useRef<HTMLDivElement>(null)
+  const drag = useRef({ moved: false, startX: 0, startLeft: 0 })
   const kiosk = kiosks.find((k) => k.id === kioskId) ?? kiosks[0]
+
+  useEffect(() => {
+    const picker = pickerRef.current
+    if (!picker) return
+    const onWheel = (event: WheelEvent) => {
+      if (picker.scrollWidth <= picker.clientWidth || Math.abs(event.deltaX) >= Math.abs(event.deltaY)) return
+      event.preventDefault()
+      picker.scrollLeft += event.deltaMode === 1 ? event.deltaY * 40 : event.deltaY
+    }
+    picker.addEventListener('wheel', onWheel, { passive: false })
+    return () => picker.removeEventListener('wheel', onWheel)
+  }, [])
+
+  const startPickerDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType !== 'mouse' || event.button !== 0) return
+    const picker = pickerRef.current
+    if (!picker || picker.scrollWidth <= picker.clientWidth) return
+    drag.current = { moved: false, startX: event.clientX, startLeft: picker.scrollLeft }
+    const onMove = (moveEvent: PointerEvent) => {
+      const distance = moveEvent.clientX - drag.current.startX
+      if (Math.abs(distance) > 6) drag.current.moved = true
+      if (drag.current.moved) picker.scrollLeft = drag.current.startLeft - distance
+    }
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      window.removeEventListener('pointercancel', onUp)
+      window.setTimeout(() => {
+        drag.current.moved = false
+      }, 0)
+    }
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+    window.addEventListener('pointercancel', onUp)
+  }
+
   if (!kiosk) return null
 
   const windowMin = operatorSettings.find((s) => s.kioskId === kiosk.id)?.outageRecoveryWindowMin ?? 10
@@ -122,15 +160,21 @@ export function DiagnosticsLabSection({ user, bump }: { user: PublicUser; bump: 
       {/* Kiosk picker */}
       <div>
         <p className="mb-2 font-display text-sm font-bold">Kiosk under test</p>
-        <div className="kb-scroll flex gap-2 overflow-x-auto pb-1">
+        <div
+          ref={pickerRef}
+          onPointerDown={startPickerDrag}
+          className="kb-scroll flex cursor-default select-none gap-2 overflow-x-auto pb-1"
+        >
           {kiosks.map((k) => (
             <button
               key={k.id}
               type="button"
-              onClick={() => setKioskId(k.id)}
+              onClick={() => {
+                if (!drag.current.moved) setKioskId(k.id)
+              }}
               aria-pressed={k.id === kiosk.id}
               className={cn(
-                'flex min-h-14 shrink-0 items-center gap-2 rounded-xl border-[3px] border-black px-4 font-display text-sm font-bold shadow-[4px_4px_0_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0_#000]',
+                'flex min-h-14 shrink-0 cursor-default items-center gap-2 rounded-xl border-[3px] border-black px-4 font-display text-sm font-bold shadow-[4px_4px_0_#000] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0_#000]',
                 k.id === kiosk.id ? 'bg-black text-white' : 'bg-white',
               )}
             >

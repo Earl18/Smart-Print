@@ -11,7 +11,6 @@ import {
   COMPONENT_META,
   HealthPill,
   KioskStatusPill,
-  SectionHead,
   daysUntil,
   effectiveComponent,
   effectiveKioskHealth,
@@ -29,11 +28,6 @@ export function OverviewSection({ user, now }: { user: PublicUser; now: Date }) 
 
   return (
     <div className="flex flex-col gap-6">
-      <SectionHead
-        title="Overview"
-        sub="Fleet health across every Smart Print kiosk — sales, incidents, licenses and sync state."
-      />
-
       {/* Stat cards */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <StatCard
